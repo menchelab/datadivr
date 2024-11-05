@@ -12,4 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate codecov configuration
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: curl -sSL --fail-with-body --data-binary @codecov.yaml https://codecov.io/validate
