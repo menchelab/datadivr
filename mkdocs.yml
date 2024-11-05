@@ -10,12 +10,15 @@ copyright: Maintained by <a href="https://menchelab.com">menchelab</a>.
 nav:
   - Home: index.md
   - Modules: modules.md
+  - Contributing: contributing.md
 plugins:
   - search
+  - include-markdown
   - mkdocstrings:
       handlers:
         python:
           paths: [datadivr]
+
 theme:
   name: material
   feature:
