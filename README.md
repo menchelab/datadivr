@@ -11,4 +11,3 @@ datadivr backend and toolset.
 - **Github repository**: <https://github.com/menchelab/datadivr/>
 - **Documentation** <https://menchelab.github.io/datadivr/>
 - **Contributing** <https://menchelab.github.io/datadivr/contributing/>
-- 
