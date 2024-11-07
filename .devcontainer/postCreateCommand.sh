@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-git config --global --add safe.directory /workspaces/datadivr
+git config --global --add safe.directory /workspaces/*
 
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh

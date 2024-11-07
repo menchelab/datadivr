@@ -42,7 +42,9 @@ class WebSocketClient:
             print(f"<< handling event: {event_name}")
             handler = self.handlers[event_name]
             message = Message.from_dict(event_data)
-            await handler(message, websocket)
+            response = await handler(message)
+            if response and isinstance(response, Message):
+                await send_message(websocket, response)
         else:
             print(f"<< no handler for event: {event_name}")
 

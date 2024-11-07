@@ -1,13 +1,14 @@
 import asyncio
 import json
-from typing import Any
+from typing import Any, Optional
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 from rich.console import Console
-from websockets import WebSocketClientProtocol
 
+# from websockets import WebSocketClientProtocol
 from datadivr.client import WebSocketClient
+from datadivr.handlers.sum_handler import sum_handler
 from datadivr.utils.messages import Message
 
 EXAMPLE_JSON = """{"event_name": "sum_event", "payload": {"numbers": [5, 7]}}"""
@@ -15,12 +16,15 @@ EXAMPLE_JSON = """{"event_name": "sum_event", "payload": {"numbers": [5, 7]}}"""
 console = Console()
 
 
-async def handle_sum_result(message: Message, websocket: WebSocketClientProtocol) -> None:
+# some custom handlers
+async def handle_sum_result(message: Message) -> Optional[Message]:
     print(f"*** handle_sum_result(): {message.from_id}: '{message.payload}'")
+    return None
 
 
-async def default_handler(message: Message, websocket: WebSocketClientProtocol) -> None:
+async def default_handler(message: Message) -> Optional[Message]:
     print(f">> {message.from_id}({message.event_name}): '{message.payload}'")
+    return None
 
 
 async def get_user_input(session: PromptSession) -> Any:
@@ -57,6 +61,7 @@ async def input_loop(client: WebSocketClient) -> None:
 async def main() -> None:
     client = WebSocketClient("ws://localhost:8000/ws")
     client.register_handler("sum_handler_result", handle_sum_result)
+    client.register_handler("client_sum", sum_handler)
     client.register_handler("msg", default_handler)
 
     console.print("[blue]Connecting to websocket...[/blue]")
