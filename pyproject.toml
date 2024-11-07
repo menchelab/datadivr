@@ -17,6 +17,11 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+dependencies = [
+    "aioconsole>=0.8.1",
+    "fastapi>=0.115.4",
+    "uvicorn>=0.32.0",
+]
 
 [project.urls]
 Homepage = "https://menchelab.github.io/datadivr/"
@@ -54,6 +59,9 @@ check_untyped_defs = true
 warn_return_any = true
 warn_unused_ignores = true
 show_error_codes = true
+ignore_missing_imports = true
+disable_error_code = ["no-any-unimported"]
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
