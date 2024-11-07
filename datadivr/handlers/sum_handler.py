@@ -1,26 +1,17 @@
-from typing import Any
-
-from fastapi import WebSocket
-
-from ..utils.messages import create_error_message, create_message, send_message
+from datadivr.utils.messages import Message, create_error_message
 
 
-async def sum_handler(event_data: dict[str, Any], websocket: WebSocket) -> None:
-    """Handle sum calculation requests."""
+async def sum_handler(message: Message) -> Message:
     try:
-        numbers: list[int] = event_data.get("payload", {}).get("numbers", [])
-        if len(numbers) == 2:
-            result: int = sum(numbers)
-            response = create_message(
-                event_name="sum_handler_result",
-                payload={"result": result},
-                to=event_data["from"],
-                message=f"The sum of {numbers} is: {result}",
-            )
-        else:
-            response = create_error_message(error_msg="Please provide exactly two numbers", to=event_data["from"])
+        numbers = message.payload["numbers"]
+        if not isinstance(numbers, list):
+            return create_error_message("Payload must be a list of numbers", message.from_id)
 
-        await send_message(websocket, response)
+        result = sum(float(n) for n in numbers)
+        return Message(
+            event_name="sum_handler_result",
+            payload=result,
+            to=message.from_id,  # only tell the sender the result, in case we wanted to share it with everybody we put "others" here, or "all" to have it sent to ourself too
+        )
     except Exception as e:
-        error_response = create_error_message(error_msg=f"Error processing request: {e!s}", to=event_data["from"])
-        await send_message(websocket, error_response)
+        return create_error_message(f"Error: {e!s}", message.from_id)

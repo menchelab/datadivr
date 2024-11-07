@@ -1,6 +1,8 @@
-from typing import Any, Optional
+import json
+from typing import Any, Optional, Union
 
 from fastapi import WebSocket
+from websockets import WebSocketClientProtocol
 
 
 class Message:
@@ -38,9 +40,13 @@ class Message:
         )
 
 
-async def send_message(websocket: WebSocket, message: Message) -> None:
+async def send_message(websocket: Union[WebSocket, WebSocketClientProtocol], message: Message) -> None:
     """Send a message through the websocket."""
-    await websocket.send(message.to_dict())
+    message_data = message.to_dict()
+    if isinstance(websocket, WebSocket):
+        await websocket.send_json(message_data)
+    elif isinstance(websocket, WebSocketClientProtocol):
+        await websocket.send(json.dumps(message_data))
 
 
 def create_error_message(error_msg: str, to: str) -> Message:
