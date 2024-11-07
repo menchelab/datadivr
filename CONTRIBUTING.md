@@ -53,7 +53,7 @@ Please note this documentation assumes you already have `uv` and `Git` installed
 
 ```bash
 cd <directory_in_which_repo_should_be_created>
-git clone git@github.com:YOUR_NAME/datadivr.git
+git clone git@github.com:menchelab/datadivr.git
 ```
 
 3. Now we need to install the environment. Navigate into the directory
@@ -80,6 +80,8 @@ uv run pre-commit install
 git checkout -b name-of-your-bugfix-or-feature
 ```
 
+6. Alternatively you can use vscode devcontainer feature which only requires you to have vscode and docker desktop installed, when you open the project in vscode install the extension and click the reopen in container button
+
 Now you can make your changes locally.
 
 6. Don't forget to add test cases for your added functionality to the `tests` directory.
@@ -100,7 +102,7 @@ make test
    This will run the tests across different versions of Python:
 
 ```bash
-tox
+uv run tox
 ```
 
 This requires you to have multiple versions of python installed.
@@ -123,4 +125,4 @@ Before you submit a pull request, check that it meets these guidelines:
 1. The pull request should include tests.
 
 2. If the pull request adds functionality, the docs should be updated.
-   Put your new functionality into a function with a docstring, and add the feature to the list in `README.md`.
+   Put your new functionality into a function with a docstring.
