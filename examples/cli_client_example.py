@@ -2,7 +2,9 @@ import asyncio
 import json
 from typing import Any
 
-import aioconsole
+from prompt_toolkit import PromptSession
+from prompt_toolkit.patch_stdout import patch_stdout
+from rich.console import Console
 from websockets import WebSocketClientProtocol
 
 from datadivr.client import WebSocketClient
@@ -10,57 +12,70 @@ from datadivr.utils.messages import Message
 
 EXAMPLE_JSON = """{"event_name": "sum_event", "payload": {"numbers": [5, 7]}}"""
 
+console = Console()
+
 
 async def handle_sum_result(message: Message, websocket: WebSocketClientProtocol) -> None:
-    print(f"*** handle_sum_result(): Received response: '{message.message}'")
+    print(f"*** handle_sum_result(): {message.from_id}: '{message.payload}'")
 
 
-async def get_user_input() -> Any:
+async def default_handler(message: Message, websocket: WebSocketClientProtocol) -> None:
+    print(f">> {message.from_id}({message.event_name}): '{message.payload}'")
+
+
+async def get_user_input(session: PromptSession) -> Any:
     while True:
         try:
-            user_input = await aioconsole.ainput()
+            with patch_stdout():
+                user_input = await session.prompt_async("Enter JSON > ")
             if user_input.lower() == "quit":
                 return None
             data = json.loads(user_input)
         except json.JSONDecodeError:
-            print("X Invalid JSON. Please try again.")
+            console.print("[red]Invalid JSON. Please try again.[/red]")
+            continue
+        except EOFError:
+            return None
         else:
             return data
 
 
 async def input_loop(client: WebSocketClient) -> None:
+    session: PromptSession = PromptSession()
     while True:
         try:
-            data = await get_user_input()
+            data = await get_user_input(session)
             if data is None:
-                break
-            event_name = data.get("event_name") or "message"
-            to_value = data.get("to") or "others"
+                return
+            event_name = data.get("event_name", "message")
+            to_value = data.get("to", "others")
             await client.send_message(payload=data.get("payload"), event_name=event_name, to=to_value)
         except Exception as e:
-            print(f"X Error sending message: {e}")
+            console.print(f"[red]Error sending message: {e}[/red]")
 
 
 async def main() -> None:
     client = WebSocketClient("ws://localhost:8000/ws")
     client.register_handler("sum_handler_result", handle_sum_result)
+    client.register_handler("msg", default_handler)
 
-    print("- Connecting to websocket...")
+    console.print("[blue]Connecting to websocket...[/blue]")
     await client.connect()
-    print("- Connected!")
-    print(f"* Example JSON format: {EXAMPLE_JSON}")
-    print("* Enter JSON message (or 'quit' to exit):")
+    console.print("[green]Connected![/green]")
+
+    console.print(f"Example JSON format: {EXAMPLE_JSON}")
 
     # Create tasks for both receiving messages and handling user input
-    receive_task = asyncio.create_task(client.receive_messages())
-    input_task = asyncio.create_task(input_loop(client))
+    tasks = [asyncio.create_task(client.receive_messages()), asyncio.create_task(input_loop(client))]
 
     try:
-        # Wait for either task to complete
-        await asyncio.gather(receive_task, input_task)
-    except KeyboardInterrupt:
-        print("\n- Disconnecting...")
-    await client.disconnect()
+        await asyncio.gather(*tasks)
+    except (asyncio.CancelledError, EOFError):
+        console.print("\n[yellow]Disconnecting...[/yellow]")
+    finally:
+        for task in tasks:
+            task.cancel()
+        await client.disconnect()
 
 
 if __name__ == "__main__":
