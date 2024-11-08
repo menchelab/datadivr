@@ -23,12 +23,12 @@ console = Console()
 
 
 # some custom handlers
-async def handle_sum_result(message: Message) -> Optional[Message]:
+def handle_sum_result(message: Message) -> Optional[Message]:
     print(f"*** handle_sum_result(): {message.from_id}: '{message.payload}'")
     return None
 
 
-async def msg_handler(message: Message) -> Optional[Message]:
+def msg_handler(message: Message) -> Optional[Message]:
     print(f">> {message.from_id}({message.event_name}): '{message.message}'")
     return None
 
