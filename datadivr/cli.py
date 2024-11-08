@@ -76,23 +76,33 @@ async def msg_handler(message: Message) -> Optional[Message]:
     return None
 
 
+# Define global options
+@app_cli.callback()
+def common_options(
+    port: int = typer.Option(8765, help="Port to run the WebSocket server or connect the client to."),
+    host: str = typer.Option("0.0.0.0", help="Host address for the WebSocket server or client."),
+) -> None:
+    """Common options for all commands."""
+    pass
+
+
 @app_cli.command()
-def start_server(port: int = 8765) -> None:
+def start_server(port: int = 8765, host: str = "0.0.0.0") -> None:
     """Start the WebSocket server."""
+    # ruff: noqa: S104
     register_handler("sum_event", sum_handler)
-    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="info")
+    config = uvicorn.Config(app, host=host, port=port, log_level="info")
     server_instance = uvicorn.Server(config)
     asyncio.run(server_instance.serve())
 
 
 @app_cli.command()
-def start_client(port: int = 8765) -> None:
+def start_client(port: int = 8765, host: str = "127.0.0.1") -> None:
     """Start the WebSocket client."""
-
     console.print("[blue]starting client...[/blue]")
 
     async def run_client() -> None:
-        client = WebSocketClient(f"ws://localhost:{port}/ws")
+        client = WebSocketClient(f"ws://{host}:{port}/ws")
 
         # Register client handlers
         client.register_handler("sum_handler_result", handle_sum_result)
