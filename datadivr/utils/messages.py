@@ -40,6 +40,7 @@ class Message:
         )
 
 
+# we can use same function for both FastAPI and websockets
 async def send_message(websocket: Union[WebSocket, WebSocketClientProtocol], message: Message) -> None:
     """Send a message through the websocket."""
     message_data = message.to_dict()

@@ -14,6 +14,9 @@ from datadivr.utils.messages import Message
 EXAMPLE_JSON = """EXAMPLES:
 {"event_name": "sum_event", "payload": {"numbers": [5, 7]}}
 {"event_name": "msg", "to": "all", "message": "hello"}
+{"event_name": "msg", "to": "others", "message": "hello"}
+{"event_name": "client_sum", "payload": {"numbers": [57, 12]}}
+
 """
 
 console = Console()
@@ -47,6 +50,10 @@ async def get_user_input(session: PromptSession) -> Any:
             return data
 
 
+class InputLoopInterrupted(Exception):
+    pass
+
+
 async def input_loop(client: WebSocketClient) -> None:
     session: PromptSession = PromptSession()
     while True:
@@ -54,10 +61,14 @@ async def input_loop(client: WebSocketClient) -> None:
             data = await get_user_input(session)
             if data is None:
                 return
-            event_name = data.get("event_name", "msg") # if unset use msg by default
-            to_value = data.get("to", "others") # d
+            event_name = data.get("event_name", "msg")  # if unset use msg by default
+            to_value = data.get("to", "others")  # d
             message_value = data.get("message", None)
-            await client.send_message(payload=data.get("payload"), event_name=event_name, to=to_value, message=message_value)
+            await client.send_message(
+                payload=data.get("payload"), event_name=event_name, to=to_value, msg=message_value
+            )
+        except KeyboardInterrupt:  # Handle Ctrl+C gracefully
+            raise InputLoopInterrupted() from None  # Raise custom exception with context
         except Exception as e:
             console.print(f"[red]Error sending message: {e}[/red]")
 
@@ -69,7 +80,11 @@ async def main() -> None:
     client.register_handler("msg", msg_handler)
 
     console.print("[blue]Connecting to websocket...[/blue]")
-    await client.connect()
+    try:
+        await client.connect()
+    except OSError as e:
+        console.print(f"[red]Failed to connect to websocket: {e}[/red]")
+        return  # Exit the main function if connection fails
 
     console.print(f"Example JSON format: {EXAMPLE_JSON}")
 
@@ -78,6 +93,8 @@ async def main() -> None:
 
     try:
         await asyncio.gather(*tasks)
+    except InputLoopInterrupted:  # Handle the custom exception
+        console.print("\n[yellow]Input loop interrupted. Exiting...[/yellow]")
     except (asyncio.CancelledError, EOFError):
         console.print("\n[yellow]Disconnecting...[/yellow]")
     finally:

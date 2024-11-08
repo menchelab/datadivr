@@ -5,7 +5,6 @@ from typing import Callable
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from rich.console import Console
 from rich.pretty import Pretty
-import json
 
 from datadivr.utils.messages import Message, send_message
 
@@ -37,8 +36,7 @@ async def handle_connection(websocket: WebSocket) -> None:
 
 
 async def handle_msg(message: Message) -> Message:
-    # Print the received message in colorful JSON format
-    console.print(f"[bold green]RECEIVED MESSAGE:[/bold green]")
+    console.print("[bold green]RECEIVED MESSAGE:[/bold green]")
     console.print(Pretty(message.to_dict()), style="green")
 
     if message.event_name in handlers:

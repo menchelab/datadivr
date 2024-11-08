@@ -52,9 +52,9 @@ class WebSocketClient:
     def register_handler(self, event_name: str, handler: Callable) -> None:
         self.handlers[event_name] = handler
 
-    async def send_message(self, payload: Any, event_name: str, message: str = None, to: str = "others") -> None:
+    async def send_message(self, payload: Any, event_name: str, msg: Optional[str] = None, to: str = "others") -> None:
         if self.websocket:
-            message = Message(event_name=event_name, payload=payload, to=to, message=message)
+            message = Message(event_name=event_name, payload=payload, to=to, message=msg)
             await send_message(self.websocket, message)
         else:
             raise NotConnectedError()
