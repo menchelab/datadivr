@@ -3,6 +3,9 @@ from collections.abc import Awaitable
 from typing import Callable
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from rich.console import Console
+from rich.pretty import Pretty
+import json
 
 from datadivr.utils.messages import Message, send_message
 
@@ -12,12 +15,14 @@ app = FastAPI()
 clients: dict[WebSocket, str] = {}  # websocket -> client_id
 handlers: dict[str, Callable[[Message], Awaitable[Message]]] = {}
 
+console = Console()
+
 
 async def handle_connection(websocket: WebSocket) -> None:
     await websocket.accept()
     client_id = str(uuid.uuid4())
     clients[websocket] = client_id
-    print(f"New client connected: {client_id}")
+    console.print(f"New client connected: [bold green]{client_id}[/bold green]")
 
     try:
         while True:
@@ -28,13 +33,16 @@ async def handle_connection(websocket: WebSocket) -> None:
             await broadcast(response, websocket)
     except WebSocketDisconnect:
         del clients[websocket]
-        print(f"Client disconnected: {client_id}")
+        console.print(f"Client disconnected: [bold red]{client_id}[/bold red]")
 
 
 async def handle_msg(message: Message) -> Message:
-    print(f"Received: {message.to_dict()}")
+    # Print the received message in colorful JSON format
+    console.print(f"[bold green]RECEIVED MESSAGE:[/bold green]")
+    console.print(Pretty(message.to_dict()), style="green")
 
     if message.event_name in handlers:
+        console.print(f"[bold yellow]running EVENT HANDLER: {message.event_name}[/bold yellow]")
         return await handlers[message.event_name](message)
     return message
 
@@ -50,12 +58,16 @@ async def broadcast(message: Message, sender: WebSocket) -> None:
     elif to in clients.values():  # specific client
         recipients = [ws for ws, cid in clients.items() if cid == to]
 
+    if len(recipients) > 0:
+        console.print(f"[bold blue]BROADCASTING MESSAGE to {len(recipients)} clients:[/bold blue]")
+        console.print(Pretty(message.to_dict()), style="blue")
+
     for recipient in recipients:
         await send_message(recipient, message)
 
 
 def register_handler(event_name: str, handler: Callable[[Message], Awaitable[Message]]) -> None:
-    print(f"* Registered handler for event: {event_name}")
+    console.print(f"* Registered handler for event: [bold blue]{event_name}[/bold blue]")
     handlers[event_name] = handler
 
 

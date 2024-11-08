@@ -52,9 +52,9 @@ class WebSocketClient:
     def register_handler(self, event_name: str, handler: Callable) -> None:
         self.handlers[event_name] = handler
 
-    async def send_message(self, payload: Any, event_name: str, to: str = "others") -> None:
+    async def send_message(self, payload: Any, event_name: str, message: str = None, to: str = "others") -> None:
         if self.websocket:
-            message = Message(event_name=event_name, payload=payload, to=to)
+            message = Message(event_name=event_name, payload=payload, to=to, message=message)
             await send_message(self.websocket, message)
         else:
             raise NotConnectedError()
@@ -68,4 +68,5 @@ class WebSocketClient:
         """Send a message with the names of all registered handlers."""
         handler_names = list(self.handlers.keys())
         payload = {"handlers": handler_names}
+        print(f">> sending handler names: {handler_names}")
         await self.send_message(payload=payload, event_name="connected successfully", to="others")

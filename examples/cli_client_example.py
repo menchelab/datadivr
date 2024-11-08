@@ -11,7 +11,10 @@ from datadivr.client import WebSocketClient
 from datadivr.handlers.sum_handler import sum_handler
 from datadivr.utils.messages import Message
 
-EXAMPLE_JSON = """{"event_name": "sum_event", "payload": {"numbers": [5, 7]}}"""
+EXAMPLE_JSON = """EXAMPLES:
+{"event_name": "sum_event", "payload": {"numbers": [5, 7]}}
+{"event_name": "msg", "to": "all", "message": "hello"}
+"""
 
 console = Console()
 
@@ -22,8 +25,8 @@ async def handle_sum_result(message: Message) -> Optional[Message]:
     return None
 
 
-async def default_handler(message: Message) -> Optional[Message]:
-    print(f">> {message.from_id}({message.event_name}): '{message.payload}'")
+async def msg_handler(message: Message) -> Optional[Message]:
+    print(f">> {message.from_id}({message.event_name}): '{message.message}'")
     return None
 
 
@@ -51,9 +54,10 @@ async def input_loop(client: WebSocketClient) -> None:
             data = await get_user_input(session)
             if data is None:
                 return
-            event_name = data.get("event_name", "message")
-            to_value = data.get("to", "others")
-            await client.send_message(payload=data.get("payload"), event_name=event_name, to=to_value)
+            event_name = data.get("event_name", "msg") # if unset use msg by default
+            to_value = data.get("to", "others") # d
+            message_value = data.get("message", None)
+            await client.send_message(payload=data.get("payload"), event_name=event_name, to=to_value, message=message_value)
         except Exception as e:
             console.print(f"[red]Error sending message: {e}[/red]")
 
@@ -62,11 +66,10 @@ async def main() -> None:
     client = WebSocketClient("ws://localhost:8000/ws")
     client.register_handler("sum_handler_result", handle_sum_result)
     client.register_handler("client_sum", sum_handler)
-    client.register_handler("msg", default_handler)
+    client.register_handler("msg", msg_handler)
 
     console.print("[blue]Connecting to websocket...[/blue]")
     await client.connect()
-    console.print("[green]Connected![/green]")
 
     console.print(f"Example JSON format: {EXAMPLE_JSON}")
 
