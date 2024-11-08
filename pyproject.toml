@@ -129,3 +129,6 @@ skip_empty = true
 [tool.coverage.run]
 branch = true
 source = ["datadivr"]
+
+[project.scripts]
+datadivr = "datadivr.cli:app_cli"
