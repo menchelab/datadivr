@@ -22,6 +22,7 @@ class WebSocketClient:
 
     async def connect(self) -> None:
         self.websocket = await websockets.connect(self.uri)
+        await self.send_handler_names()
 
     async def receive_messages(self) -> None:
         """Listen for incoming messages from the server."""
@@ -62,3 +63,9 @@ class WebSocketClient:
         if self.websocket:
             await self.websocket.close()
             self.websocket = None
+
+    async def send_handler_names(self) -> None:
+        """Send a message with the names of all registered handlers."""
+        handler_names = list(self.handlers.keys())
+        payload = {"handlers": handler_names}
+        await self.send_message(payload=payload, event_name="connected successfully", to="others")
