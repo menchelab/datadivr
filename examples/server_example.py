@@ -2,13 +2,12 @@ import asyncio
 
 import uvicorn
 
-from datadivr.handlers.sum_handler import sum_handler
-from datadivr.server import app, register_handler
+# Import handlers to register them automatically
+from datadivr.handlers import sum_handler  # noqa: F401
+from datadivr.server import app
 
 
 async def main() -> None:
-    register_handler("sum_event", sum_handler)
-
     config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="info")
     server_instance = uvicorn.Server(config)
     await server_instance.serve()

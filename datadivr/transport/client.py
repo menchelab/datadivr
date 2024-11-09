@@ -1,23 +1,19 @@
 import json
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 import websockets
 from websockets import WebSocketClientProtocol
 
-from .utils.messages import Message, send_message
-
-
-class NotConnectedError(RuntimeError):
-    """Exception raised when the client is not connected to the server."""
-
-    def __init__(self) -> None:
-        super().__init__("Not connected to server")
+from datadivr.exceptions import NotConnectedError
+from datadivr.handlers.registry import HandlerType, get_handlers
+from datadivr.transport.messages import send_message
+from datadivr.transport.models import WebSocketMessage
 
 
 class WebSocketClient:
     def __init__(self, uri: str):
         self.uri = uri
-        self.handlers: dict[str, Callable] = {}
+        self.handlers = get_handlers(HandlerType.CLIENT)
         self.websocket: Optional[WebSocketClientProtocol] = None
 
     async def connect(self) -> None:
@@ -42,19 +38,16 @@ class WebSocketClient:
         if event_name in self.handlers:
             print(f"<< handling event: {event_name}")
             handler = self.handlers[event_name]
-            message = Message.from_dict(event_data)
+            message = WebSocketMessage.model_validate(event_data)
             response = await handler(message)
-            if response and isinstance(response, Message):
+            if response and isinstance(response, WebSocketMessage):
                 await send_message(websocket, response)
         else:
             print(f"<< no handler for event: {event_name}")
 
-    def register_handler(self, event_name: str, handler: Callable) -> None:
-        self.handlers[event_name] = handler
-
     async def send_message(self, payload: Any, event_name: str, msg: Optional[str] = None, to: str = "others") -> None:
         if self.websocket:
-            message = Message(event_name=event_name, payload=payload, to=to, message=msg)
+            message = WebSocketMessage(event_name=event_name, payload=payload, to=to, message=msg)
             await send_message(self.websocket, message)
         else:
             raise NotConnectedError()
