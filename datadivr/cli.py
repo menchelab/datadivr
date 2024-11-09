@@ -98,6 +98,7 @@ def start_server(port: int = 8765, host: str = "127.0.0.1") -> None:
         port: The port to listen on
         host: The host address to bind to
     """
+    print("run server")
     config = uvicorn.Config(app, host=host, port=port, log_level="info")
     server_instance = uvicorn.Server(config)
     asyncio.run(server_instance.serve())
@@ -142,3 +143,7 @@ def start_client(port: int = 8765, host: str = "127.0.0.1") -> None:
             await client.disconnect()
 
     asyncio.run(run_client())
+
+
+if __name__ == "__main__":
+    app_cli()  # This will show the help message by default

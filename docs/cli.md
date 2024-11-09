@@ -90,6 +90,7 @@ When developing or testing the CLI:
    ```
 
 3. Check type hints:
+
    ```bash
    uv run mypy datadivr/cli.py
    ```

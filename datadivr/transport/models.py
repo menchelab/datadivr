@@ -32,7 +32,7 @@ class WebSocketMessage(BaseModel):
     event_name: str
     payload: Optional[Any] = None
     to: str = Field(default="others")
-    from_id: str = Field(default="server", alias="from")
+    from_id: str = Field(default="server")
     message: Optional[str] = None
 
     ConfigDict: ClassVar[dict] = {

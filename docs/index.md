@@ -35,9 +35,11 @@ python -m datadivr.cli [command] [options]
   This command starts the WebSocket server.
 
 - **Start Client**:
+
   ```bash
   python -m datadivr.cli start_client --port 8765 --host 127.0.0.1
   ```
+
   This command starts the WebSocket client, allowing you to send messages to the server.
 
 ### Example JSON Format
