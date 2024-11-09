@@ -78,7 +78,8 @@ class WebSocketClient:
             raise NotConnectedError()
 
         try:
-            async for message in self.websocket:
+            while True:
+                message = await self.websocket.recv()
                 event_data = json.loads(message)
                 print(f"< received message: {event_data}")
                 await self.handle_event(event_data, self.websocket)

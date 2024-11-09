@@ -33,8 +33,15 @@ class AuthenticationError(DataDivrError):
     pass
 
 
-class UnsupportedWebSocketTypeError(DataDivrError):
-    """Raised when an unsupported WebSocket type is used."""
+class UnsupportedWebSocketTypeError(Exception):
+    """Exception raised when an unsupported WebSocket type is used."""
 
-    def __init__(self, message: str = "Unsupported WebSocket type") -> None:
-        super().__init__(message)
+    def __init__(self) -> None:
+        super().__init__("Unsupported WebSocket type")
+
+
+class InputLoopInterrupted(Exception):
+    """Custom exception for input loop interruption."""
+
+    def __init__(self) -> None:
+        super().__init__("Input loop interrupted")

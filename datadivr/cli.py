@@ -8,6 +8,7 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 from rich.console import Console
 
+from datadivr.exceptions import InputLoopInterrupted
 from datadivr.handlers.builtin import sum_handler  # noqa: F401
 from datadivr.transport.client import WebSocketClient
 from datadivr.transport.server import app
@@ -21,12 +22,6 @@ EXAMPLE_JSON = """EXAMPLES:
 {"event_name": "msg", "to": "others", "message": "hello"}
 {"event_name": "sum_event_client", "payload": {"numbers": [57, 12]}}
 """
-
-
-class InputLoopInterrupted(Exception):
-    """Custom exception for input loop interruption."""
-
-    pass
 
 
 async def get_user_input(session: PromptSession) -> Any:
@@ -76,7 +71,7 @@ async def input_loop(client: WebSocketClient) -> None:
                 payload=data.get("payload"), event_name=event_name, to=to_value, msg=message_value
             )
         except KeyboardInterrupt:  # Handle Ctrl+C gracefully
-            raise InputLoopInterrupted() from None  # Raise custom exception with context
+            raise InputLoopInterrupted() from None
         except Exception as e:
             console.print(f"[red]Error sending message: {e}[/red]")
 
@@ -104,6 +99,41 @@ def start_server(port: int = 8765, host: str = "127.0.0.1") -> None:
     asyncio.run(server_instance.serve())
 
 
+async def run_client(host: str, port: int) -> None:
+    """Run the WebSocket client.
+
+    Args:
+        host: The host to connect to
+        port: The port to connect to
+    """
+    client = WebSocketClient(f"ws://{host}:{port}/ws")
+
+    console.print("[blue]Connecting to websocket...[/blue]")
+    try:
+        await client.connect()
+    except OSError as e:
+        console.print(f"[red]Failed to connect to websocket: {e}[/red]")
+        return
+
+    console.print(f"Example JSON format: {EXAMPLE_JSON}")
+
+    tasks = [
+        asyncio.create_task(client.receive_messages()),
+        asyncio.create_task(input_loop(client)),
+    ]
+
+    try:
+        await asyncio.gather(*tasks)
+    except InputLoopInterrupted:
+        console.print("\n[yellow]Input loop interrupted. Exiting...[/yellow]")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+    finally:
+        for task in tasks:
+            task.cancel()
+        await client.disconnect()
+
+
 @app_cli.command()
 def start_client(port: int = 8765, host: str = "127.0.0.1") -> None:
     """Start an interactive WebSocket client.
@@ -113,36 +143,7 @@ def start_client(port: int = 8765, host: str = "127.0.0.1") -> None:
         host: The host address to connect to
     """
     console.print("[blue]starting client...[/blue]")
-
-    async def run_client() -> None:
-        client = WebSocketClient(f"ws://{host}:{port}/ws")
-
-        console.print("[blue]Connecting to websocket...[/blue]")
-        try:
-            await client.connect()
-        except OSError as e:
-            console.print(f"[red]Failed to connect to websocket: {e}[/red]")
-            return
-
-        console.print(f"Example JSON format: {EXAMPLE_JSON}")
-
-        tasks = [
-            asyncio.create_task(client.receive_messages()),
-            asyncio.create_task(input_loop(client)),
-        ]
-
-        try:
-            await asyncio.gather(*tasks)
-        except InputLoopInterrupted:
-            console.print("\n[yellow]Input loop interrupted. Exiting...[/yellow]")
-        except Exception as e:
-            console.print(f"[red]Error: {e}[/red]")
-        finally:
-            for task in tasks:
-                task.cancel()
-            await client.disconnect()
-
-    asyncio.run(run_client())
+    asyncio.run(run_client(host, port))
 
 
 if __name__ == "__main__":
