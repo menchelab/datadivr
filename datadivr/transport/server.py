@@ -1,3 +1,17 @@
+"""WebSocket server implementation for datadivr.
+
+This module provides a FastAPI-based WebSocket server that handles client
+connections, message routing, and event handling.
+
+Example:
+    ```python
+    import uvicorn
+    from datadivr import app
+
+    uvicorn.run(app, host="127.0.0.1", port=8765)
+    ```
+"""
+
 import uuid
 from typing import Optional
 
@@ -17,11 +31,25 @@ clients: dict[WebSocket, str] = {}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
+    """Handle incoming WebSocket connections.
+
+    This endpoint accepts WebSocket connections and manages the client session.
+
+    Args:
+        websocket: The WebSocket connection
+    """
     await handle_connection(websocket)
 
 
 async def handle_connection(websocket: WebSocket) -> None:
-    """Handle WebSocket connection."""
+    """Handle a WebSocket connection lifecycle.
+
+    This function manages the entire lifecycle of a WebSocket connection,
+    including client registration, message handling, and cleanup.
+
+    Args:
+        websocket: The WebSocket connection to handle
+    """
     await websocket.accept()
     client_id = str(uuid.uuid4())
     clients[websocket] = client_id
@@ -48,7 +76,16 @@ async def handle_connection(websocket: WebSocket) -> None:
 
 
 async def handle_msg(message: WebSocketMessage) -> Optional[WebSocketMessage]:
-    """Handle incoming WebSocket message."""
+    """Handle an incoming WebSocket message.
+
+    This function routes messages to appropriate handlers based on the event name.
+
+    Args:
+        message: The WebSocket message to handle
+
+    Returns:
+        Optional response message to be sent back
+    """
     logger.debug("message_received", message=message.model_dump())
 
     handlers = get_handlers(HandlerType.SERVER)
@@ -59,7 +96,17 @@ async def handle_msg(message: WebSocketMessage) -> Optional[WebSocketMessage]:
 
 
 async def broadcast(message: WebSocketMessage, sender: WebSocket) -> None:
-    """Broadcast message to appropriate clients."""
+    """Broadcast a message to appropriate clients.
+
+    Args:
+        message: The message to broadcast
+        sender: The WebSocket connection that sent the message
+
+    The message is routed based on its 'to' field:
+    - "all": Send to all clients
+    - "others": Send to all clients except the sender
+    - specific ID: Send only to the client with that ID
+    """
     message_data = message.model_dump()
     targets: list[WebSocket] = []
 
