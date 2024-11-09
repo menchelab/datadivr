@@ -25,3 +25,14 @@ async def test_msg_handler(capsys):
     await msg_handler(message)
     captured = capsys.readouterr()
     assert "test message" in captured.out
+
+
+@pytest.mark.asyncio
+async def test_sum_handler_valid_calculation():
+    # Test with integers and floats
+    message = WebSocketMessage(event_name="sum_event", payload={"numbers": [1, 2.5, 3.7, 4, 5.8]}, from_id="test")
+    result = await sum_handler(message)
+
+    assert result.event_name == "sum_handler_result"
+    assert result.to == "test"
+    assert pytest.approx(result.payload) == 17.0  # 1 + 2.5 + 3.7 + 4 + 5.8 = 17.0
