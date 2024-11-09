@@ -79,3 +79,17 @@ async def test_handle_event(client, mock_websocket):
 
     await client.handle_event(message, mock_websocket)
     mock_handler.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_send_handler_names(client, mock_websocket):
+    client.websocket = mock_websocket
+    client.handlers = {"test_handler1": AsyncMock(), "test_handler2": AsyncMock()}
+    mock_websocket.send = AsyncMock()
+
+    await client.send_handler_names()
+
+    expected_message = WebSocketMessage(
+        event_name="connected successfully", payload={"handlers": ["test_handler1", "test_handler2"]}, to="others"
+    )
+    mock_websocket.send.assert_called_once_with(json.dumps(expected_message.model_dump()))
