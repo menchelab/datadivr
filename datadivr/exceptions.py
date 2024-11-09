@@ -31,3 +31,10 @@ class AuthenticationError(DataDivrError):
     """Raised when authentication fails."""
 
     pass
+
+
+class UnsupportedWebSocketTypeError(DataDivrError):
+    """Raised when an unsupported WebSocket type is used."""
+
+    def __init__(self, message: str = "Unsupported WebSocket type") -> None:
+        super().__init__(message)

@@ -4,6 +4,7 @@ from typing import Any, Optional, Union
 from fastapi import WebSocket
 from websockets import WebSocketClientProtocol
 
+from datadivr.exceptions import UnsupportedWebSocketTypeError
 from datadivr.transport.models import WebSocketMessage
 from datadivr.utils.logging import get_logger
 
@@ -20,6 +21,9 @@ async def send_message(websocket: Union[WebSocket, WebSocketClientProtocol], mes
         websocket: The WebSocket connection to send the message through
         message: The WebSocketMessage to send
 
+    Raises:
+        UnsupportedWebSocketTypeError: If the websocket is not a supported type
+
     Example:
         ```python
         await send_message(ws, WebSocketMessage(
@@ -30,10 +34,13 @@ async def send_message(websocket: Union[WebSocket, WebSocketClientProtocol], mes
     """
     message_data = message.model_dump()
     logger.debug("send_message", message=message_data)
+
     if isinstance(websocket, WebSocket):
         await websocket.send_json(message_data)
     elif isinstance(websocket, WebSocketClientProtocol):
         await websocket.send(json.dumps(message_data))
+    else:
+        raise UnsupportedWebSocketTypeError()
 
 
 def create_error_message(error_msg: str, to: str) -> WebSocketMessage:
