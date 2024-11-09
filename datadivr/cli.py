@@ -23,12 +23,24 @@ EXAMPLE_JSON = """EXAMPLES:
 """
 
 
-# Custom exception for input loop interruption
 class InputLoopInterrupted(Exception):
+    """Custom exception for input loop interruption."""
+
     pass
 
 
 async def get_user_input(session: PromptSession) -> Any:
+    """Get JSON input from the user.
+
+    Args:
+        session: The prompt session to use for input
+
+    Returns:
+        The parsed JSON data or None if the user wants to quit
+
+    Raises:
+        json.JSONDecodeError: If the input is not valid JSON
+    """
     while True:
         try:
             with patch_stdout():
@@ -46,6 +58,11 @@ async def get_user_input(session: PromptSession) -> Any:
 
 
 async def input_loop(client: WebSocketClient) -> None:
+    """Run the main input loop for the WebSocket client.
+
+    Args:
+        client: The WebSocket client to use for sending messages
+    """
     session: PromptSession = PromptSession()
     while True:
         try:
@@ -64,20 +81,23 @@ async def input_loop(client: WebSocketClient) -> None:
             console.print(f"[red]Error sending message: {e}[/red]")
 
 
-# Define global options
 @app_cli.callback()
 def common_options(
     port: int = typer.Option(8765, help="Port to run the WebSocket server or connect the client to."),
     host: str = typer.Option("127.0.0.1", help="Host address for the WebSocket server or client."),
 ) -> None:
-    """Common options for all commands."""
+    """Common options for all CLI commands."""
     pass
 
 
 @app_cli.command()
 def start_server(port: int = 8765, host: str = "127.0.0.1") -> None:
-    """Start the WebSocket server."""
+    """Start the WebSocket server.
 
+    Args:
+        port: The port to listen on
+        host: The host address to bind to
+    """
     config = uvicorn.Config(app, host=host, port=port, log_level="info")
     server_instance = uvicorn.Server(config)
     asyncio.run(server_instance.serve())
@@ -85,7 +105,12 @@ def start_server(port: int = 8765, host: str = "127.0.0.1") -> None:
 
 @app_cli.command()
 def start_client(port: int = 8765, host: str = "127.0.0.1") -> None:
-    """Start the WebSocket client."""
+    """Start an interactive WebSocket client.
+
+    Args:
+        port: The port to connect to
+        host: The host address to connect to
+    """
     console.print("[blue]starting client...[/blue]")
 
     async def run_client() -> None:
@@ -117,7 +142,3 @@ def start_client(port: int = 8765, host: str = "127.0.0.1") -> None:
             await client.disconnect()
 
     asyncio.run(run_client())
-
-
-if __name__ == "__main__":
-    app_cli()

@@ -6,7 +6,21 @@ from datadivr.transport.models import WebSocketMessage
 @websocket_handler("sum_event", HandlerType.SERVER)
 @websocket_handler("sum_event_client", HandlerType.CLIENT)
 async def sum_handler(message: WebSocketMessage) -> WebSocketMessage:
-    """Handle sum calculation requests."""
+    """Handle requests to calculate the sum of a list of numbers.
+
+    This handler processes both server and client-side sum calculation requests.
+    It expects a payload containing a list of numbers and returns their sum.
+
+    Args:
+        message: A WebSocketMessage containing a payload with a "numbers" key
+                holding a list of numeric values
+
+    Returns:
+        WebSocketMessage: A message containing the sum result or an error message
+
+    Example payload:
+        {"numbers": [1, 2, 3, 4, 5]}
+    """
     try:
         payload = message.payload
         if not isinstance(payload, dict):
@@ -28,13 +42,21 @@ async def sum_handler(message: WebSocketMessage) -> WebSocketMessage:
 
 @websocket_handler("sum_handler_result", HandlerType.CLIENT)
 async def handle_sum_result(message: WebSocketMessage) -> None:
-    """Handle sum result on client side."""
+    """Handle the result of a sum calculation on the client side.
+
+    Args:
+        message: A WebSocketMessage containing the sum result in its payload
+    """
     print(f"*** handle_sum_result(): {message.from_id}: '{message.payload}'")
     return None
 
 
 @websocket_handler("msg", HandlerType.CLIENT)
 async def msg_handler(message: WebSocketMessage) -> None:
-    """Handle generic messages on client side."""
+    """Handle generic text messages on the client side.
+
+    Args:
+        message: A WebSocketMessage containing a text message
+    """
     print(f">> {message.from_id}({message.event_name}): '{message.message}'")
     return None
