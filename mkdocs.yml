@@ -1,55 +1,62 @@
 site_name: datadivr
+site_description: WebSocket-based data communication framework
 repo_url: https://github.com/menchelab/datadivr
-site_url: https://menchelab.github.io/datadivr
-site_description: datadivr backend and toolset.
-site_author: phfr
-edit_uri: edit/main/docs/
 repo_name: menchelab/datadivr
-copyright: Maintained by <a href="https://menchelab.com">menchelab</a>.
-
-nav:
-  - Home: index.md
-  - Modules: modules.md
-  - Contributing: contributing.md
-plugins:
-  - search
-  - include-markdown
-  - mkdocstrings:
-      handlers:
-        python:
-          paths: [datadivr]
 
 theme:
   name: material
-  feature:
-    tabs: true
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: white
-      accent: deep orange
+    - scheme: default
+      primary: indigo
+      accent: indigo
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: black
-      accent: deep orange
+    - scheme: slate
+      primary: indigo
+      accent: indigo
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-  icon:
-    repo: fontawesome/brands/github
+  features:
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
 
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/menchelab/datadivr
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/datadivr
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            show_submodules: true
+  - include-markdown
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: installation.md
+      - Command Line Interface: cli.md
+  - Reference:
+      - Models: api/models.md
+      - Handlers: api/handlers.md
+      - Transport: api/transport.md
+  - Technical Overview: technical_overview.md
+  - Contributing: contributing.md
 
 markdown_extensions:
-  - toc:
-      permalink: true
-  - pymdownx.arithmatex:
-      generic: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
