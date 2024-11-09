@@ -1,12 +1,11 @@
 from collections.abc import Awaitable
 from enum import Enum, auto
 from functools import wraps
-from typing import Any, Callable, ParamSpec, TypeVar, cast
+from typing import Any, Callable, Optional, TypeVar
 
 from datadivr.transport.models import WebSocketMessage
 
-P = ParamSpec("P")
-T = TypeVar("T", bound=Callable[..., Awaitable[WebSocketMessage | None]])
+T = TypeVar("T", bound=Callable[..., Awaitable[Optional[WebSocketMessage]]])
 
 
 class HandlerType(Enum):
@@ -18,13 +17,13 @@ class HandlerType(Enum):
 
 
 # Separate registries for server and client handlers
-_server_handlers: dict[str, Callable[[WebSocketMessage], Awaitable[WebSocketMessage | None]]] = {}
-_client_handlers: dict[str, Callable[[WebSocketMessage], Awaitable[WebSocketMessage | None]]] = {}
+_server_handlers: dict[str, Callable[[WebSocketMessage], Awaitable[Optional[WebSocketMessage]]]] = {}
+_client_handlers: dict[str, Callable[[WebSocketMessage], Awaitable[Optional[WebSocketMessage]]]] = {}
 
 
 def get_handlers(
     handler_type: HandlerType = HandlerType.SERVER,
-) -> dict[str, Callable[[WebSocketMessage], Awaitable[WebSocketMessage | None]]]:
+) -> dict[str, Callable[[WebSocketMessage], Awaitable[Optional[WebSocketMessage]]]]:
     """
     Get registered handlers for the specified type.
 
@@ -36,7 +35,11 @@ def get_handlers(
     return _client_handlers
 
 
-def websocket_handler(event_name: str, handler_type: HandlerType = HandlerType.SERVER) -> Callable[[T], T]:
+def websocket_handler(
+    event_name: str, handler_type: HandlerType = HandlerType.SERVER
+) -> Callable[
+    [Callable[..., Awaitable[Optional[WebSocketMessage]]]], Callable[..., Awaitable[Optional[WebSocketMessage]]]
+]:
     """
     Decorator to register a websocket handler function.
 
@@ -46,13 +49,15 @@ def websocket_handler(event_name: str, handler_type: HandlerType = HandlerType.S
 
     Example:
         @websocket_handler("sum_event", HandlerType.BOTH)
-        async def sum_handler(message: WebSocketMessage) -> WebSocketMessage:
+        async def sum_handler(message: WebSocketMessage) -> Optional[WebSocketMessage]:
             ...
     """
 
-    def decorator(func: T) -> T:
+    def decorator(
+        func: Callable[..., Awaitable[Optional[WebSocketMessage]]],
+    ) -> Callable[..., Awaitable[Optional[WebSocketMessage]]]:
         @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> WebSocketMessage | None:
+        async def wrapper(*args: Any, **kwargs: Any) -> Optional[WebSocketMessage]:
             return await func(*args, **kwargs)
 
         if handler_type in (HandlerType.SERVER, HandlerType.BOTH):
@@ -60,6 +65,6 @@ def websocket_handler(event_name: str, handler_type: HandlerType = HandlerType.S
         if handler_type in (HandlerType.CLIENT, HandlerType.BOTH):
             _client_handlers[event_name] = wrapper
 
-        return cast(T, wrapper)
+        return wrapper
 
     return decorator
