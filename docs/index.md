@@ -2,50 +2,56 @@
 
 [![Release](https://img.shields.io/github/v/release/menchelab/datadivr)](https://img.shields.io/github/v/release/menchelab/datadivr)
 [![Build status](https://img.shields.io/github/actions/workflow/status/menchelab/datadivr/main.yml?branch=main)](https://github.com/menchelab/datadivr/actions/workflows/main.yml?query=branch%3Amain)
-[![Commit activity](https://img.shields.io/github/commit-activity/m/menchelab/datadivr)](https://img.shields.io/github/commit-activity/m/menchelab/datadivr)
 [![License](https://img.shields.io/github/license/menchelab/datadivr)](https://img.shields.io/github/license/menchelab/datadivr)
 
-datadivr backend and toolset.
+A WebSocket-based data communication framework for Python.
 
-## Overview
+## Quick Start
 
-`datadivr` is a WebSocket-based data communication framework that allows for easy registration and handling of WebSocket events.
-
-### Key Features
-
-- **WebSocket Handlers**: Use the `@websocket_handler` decorator to register functions that handle specific WebSocket events.
-- **WebSocket Messages**: The `WebSocketMessage` model defines the structure of messages sent over WebSocket, including attributes like `event_name`, `payload`, `to`, `from_id`, and `message`.
-
-## Running the CLI
-
-To run the CLI, use the following command structure:
+1. Install using uv (recommended):
 
 ```bash
-python -m datadivr.cli [command] [options]
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv pip install datadivr
 ```
 
-### Commands
+2. Start a WebSocket server:
 
-- **Start Server**:
+```bash
+uv run datadivr start-server --port 8765
+```
 
-  ```bash
-  python -m datadivr.cli start_server --port 8765 --host 127.0.0.1
-  ```
+3. Connect a client:
 
-  This command starts the WebSocket server.
+```bash
+uv run datadivr start-client --port 8765
+```
 
-- **Start Client**:
+## Key Features
 
-  ```bash
-  python -m datadivr.cli start_client --port 8765 --host 127.0.0.1
-  ```
+- Simple WebSocket server and client implementation
+- Event-based message handling
+- Built-in handlers for common operations
+- Easy-to-use CLI interface
 
-  This command starts the WebSocket client, allowing you to send messages to the server.
+## Example Usage
 
-### Example JSON Format
-
-When using the client, you can send messages in the following JSON format:
+Send a message to calculate a sum:
 
 ```json
-{ "event_name": "sum_event", "payload": { "numbers": [391, 29] } }
+{
+  "event_name": "sum_event",
+  "payload": { "numbers": [1, 2, 3] },
+  "to": "all"
+}
+```
+
+Send a broadcast message:
+
+```json
+{
+  "event_name": "msg",
+  "message": "Hello everyone!",
+  "to": "all"
+}
 ```

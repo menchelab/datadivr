@@ -1,4 +1,4 @@
-site_name: DataDivr
+site_name: datadivr
 site_description: WebSocket-based data communication framework
 repo_url: https://github.com/menchelab/datadivr
 repo_name: menchelab/datadivr
@@ -43,11 +43,11 @@ nav:
   - Getting Started:
       - Installation: installation.md
       - Command Line Interface: cli.md
-  - API Reference:
+  - Reference:
       - Models: api/models.md
       - Handlers: api/handlers.md
       - Transport: api/transport.md
-      - CLI: api/cli.md
+  - Technical Overview: technical_overview.md
   - Contributing: contributing.md
 
 markdown_extensions:

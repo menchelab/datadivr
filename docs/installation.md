@@ -1,121 +1,111 @@
 # Installation
 
-## Requirements
-
-- Python 3.9 or higher
-
-## Using pip
-
-Install DataDivr using pip:
-
-```bash
-pip install datadivr
-```
-
 ## Using uv (Recommended)
 
-DataDivr can be installed and run using the modern Python package installer `uv`:
-
 ```bash
-# Install uv if you haven't already
+# Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install datadivr
 uv pip install datadivr
-
-# Run datadivr CLI directly
-uvx datadivr --help
 ```
 
-## Development Installation
+## Running Without Installation
 
-For development, clone the repository and install in editable mode:
+You can run datadivr directly without installing using `uvx`:
+
+```bash
+# Run datadivr CLI directly
+uvx datadivr --help
+
+# Start server
+uvx datadivr start-server --port 8765
+
+# Start client
+uvx datadivr start-client --port 8765
+```
+
+## Development Setup
+
+1. Clone the repository:
 
 ```bash
 git clone https://github.com/menchelab/datadivr.git
 cd datadivr
-
-# Using uv (recommended)
-uv pip install -e ".[dev]"
-
-# Or using pip
-pip install -e ".[dev]"
 ```
 
-This will install all development dependencies including testing and documentation tools.
-
-## Development Tools
-
-DataDivr uses several tools to maintain code quality:
-
-### Pre-commit Hooks
-
-We use pre-commit hooks to ensure code quality. Install them with:
+2. Install dependencies:
 
 ```bash
-pre-commit install
+uv sync
 ```
 
-The hooks include:
+3. Install pre-commit hooks:
 
-- Code formatting with Ruff
-- YAML/TOML validation
-- Trailing whitespace removal
-- Merge conflict checks
-- Prettier for markdown/yaml formatting
+```bash
+uv run pre-commit install
+```
 
-### Continuous Integration
+## Development Commands
 
-Our GitHub Actions workflows handle:
+The project includes a Makefile with common development tasks:
 
-1. Quality Checks (`main.yml`):
+```bash
+# Install dependencies and pre-commit hooks
+make install
 
-   - Pre-commit hook validation
-   - Unit tests across Python 3.9-3.13
-   - Type checking with mypy
-   - Code coverage reporting to Codecov
-   - Documentation build verification
+# Run all code quality checks
+make check
 
-2. Release Process (`on-release-main.yml`):
+# Run tests with coverage
+make test
 
-   - Version updating
-   - PyPI package publishing
-   - Documentation deployment to GitHub Pages
+# Build package
+make build
 
-3. Configuration Validation:
-   - Codecov configuration validation
+# Build and serve documentation
+make docs
 
-### Running Tests
+# Show all available commands
+make help
+```
+
+## Running Tests
+
+### Single Python Version
 
 ```bash
 # Run tests with coverage
-uv run pytest tests --cov
-
-# Type checking
-uv run mypy
-
-# Run all checks
-make check
+make test
 ```
 
-### Building Documentation
+### Multiple Python Versions
+
+To test against multiple Python versions (3.9-3.13), use tox with uv:
 
 ```bash
-# Build docs
-uv run mkdocs build
+# Install required Python versions first
+# Then run tox using uv
+uv run tox
 
-# Serve docs locally
-uv run mkdocs serve
+# To run for specific Python version(s)
+uv run tox -e py39,py310
 ```
+
+Supported environments:
+
+- py39 (Python 3.9)
+- py310 (Python 3.10)
+- py311 (Python 3.11)
+- py312 (Python 3.12)
+- py313 (Python 3.13)
 
 ## Verifying Installation
 
-After installation, verify it works by running:
-
 ```bash
-# Using uv
-uvx datadivr --help
+# If installed
+uv run datadivr --help
 
-# Or using standard installation
-datadivr --help
+# Or without installing
+uvx datadivr --help
 ```
