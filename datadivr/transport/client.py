@@ -136,5 +136,5 @@ class WebSocketClient:
         """
         handler_names = list(self.handlers.keys())
         payload = {"handlers": handler_names}
-        print(f">> sending handler names: {handler_names}")
+        print(f">> sending handler names  : {handler_names}")
         await self.send_message(payload=payload, event_name="connected successfully", to="others")
