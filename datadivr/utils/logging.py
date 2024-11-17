@@ -1,6 +1,7 @@
 import logging
 import sys
-from typing import Any
+from collections.abc import Mapping, MutableMapping
+from typing import Any, Callable, Optional, Union
 
 import structlog
 
@@ -8,7 +9,7 @@ import structlog
 def setup_logging(
     level: str = "INFO",
     pretty: bool = True,
-    log_file: str | None = None,
+    log_file: Optional[str] = None,
 ) -> None:
     """Configure logging for the entire application.
 
@@ -20,15 +21,17 @@ def setup_logging(
     # Set log level
     log_level = getattr(logging, level.upper())
 
-    # Configure processors
-    processors = [
+    # Configure processors with type annotation
+    processors: list[
+        Callable[[Any, str, MutableMapping[str, Any]], Union[Mapping[str, Any], str, bytes, bytearray, tuple[Any, ...]]]
+    ] = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.filter_by_level,
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.processors.StackInfoRenderer(),
- #       structlog.processors.format_exc_info,
+        #       structlog.processors.format_exc_info,
     ]
 
     if pretty:

@@ -2,8 +2,8 @@ import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
-from zipfile import ZipFile, ZIP_DEFLATED
+from typing import Any, Optional, Union
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import numpy as np
 import numpy.typing as npt
@@ -19,72 +19,50 @@ RGBAColor = tuple[int, int, int, int]
 
 logger = get_logger(__name__)
 
+
 @dataclass
 class NodeData:
     """Efficient storage for large node datasets"""
-    ids: npt.NDArray[np.int32]          # Array of node IDs
-    names: list[str]                    # Parallel array of names
+
+    ids: npt.NDArray[np.int32]  # Array of node IDs
+    names: list[str]  # Parallel array of names
     attributes: dict[int, dict[str, str]]  # Sparse dictionary of attributes keyed by node ID
+
 
 @dataclass
 class LayoutData:
     """Efficient storage for layout positions"""
-    node_ids: npt.NDArray[np.int32]     # Array of node IDs (N,)
-    positions: npt.NDArray[np.float32]   # Array of positions (N, 3)
-    colors: npt.NDArray[np.uint8]        # Array of RGBA colors (N, 4)
+
+    node_ids: npt.NDArray[np.int32]  # Array of node IDs (N,)
+    positions: npt.NDArray[np.float32]  # Array of positions (N, 3)
+    colors: npt.NDArray[np.uint8]  # Array of RGBA colors (N, 4)
+
 
 @dataclass
 class LinkData:
     """Efficient storage for links"""
-    start_ids: npt.NDArray[np.int32]     # Array of source IDs (M,)
-    end_ids: npt.NDArray[np.int32]       # Array of target IDs (M,)
-    colors: npt.NDArray[np.uint8]        # Array of RGBA colors (M, 4)
 
-class Link(BaseModel):
-    """Represents a connection between two nodes in the project graph.
+    start_ids: npt.NDArray[np.int32]  # Array of source IDs (M,)
+    end_ids: npt.NDArray[np.int32]  # Array of target IDs (M,)
+    colors: npt.NDArray[np.uint8]  # Array of RGBA colors (M, 4)
 
-    Attributes:
-        start: ID of the source node
-        end: ID of the target node
-        linkcolor: RGBA color tuple for visual representation
-    """
-    start: int
-    end: int
-    linkcolor: RGBAColor
-
-class LayoutNodePosition(BaseModel):
-    """Defines the 3D position and color of a node in a specific layout.
-
-    Attributes:
-        node_id: Reference to the Node.id
-        x: X-coordinate in 3D space
-        y: Y-coordinate in 3D space
-        z: Z-coordinate in 3D space
-        nodecolor: RGBA color tuple for visual representation
-    """
-    node_id: int
-    x: float
-    y: float
-    z: float
-    nodecolor: RGBAColor
-
-class Layout(BaseModel):
-    name: str
-    node_positions: list[LayoutNodePosition]
 
 class SelectionNodes(BaseModel):
     node_ids: list[int]
     create_clusternode: bool
+
 
 class Selection(BaseModel):
     name: str
     label_color: RGBAColor
     nodes: SelectionNodes
 
-class Node(BaseModel):
-    id: int
-    name: str
-    attributes: dict[str, str] = Field(default_factory=dict)
+
+class LayoutNotFoundError(ValueError):
+    """Raised when a requested layout is not found in the project."""
+
+    pass
+
 
 class Project(BaseModel):
     """Root model representing a DataDiVR project.
@@ -111,25 +89,18 @@ class Project(BaseModel):
         )
         ```
     """
+
     model_config = {
         "arbitrary_types_allowed": True,
         "json_schema_extra": {
             "examples": [
-                {
-                    "name": "Example Project",
-                    "nodes": [{"id": 1, "name": "First Node"}],
-                    "links": [],
-                    "layouts": []
-                }
+                {"name": "Example Project", "nodes": [{"id": 1, "name": "First Node"}], "links": [], "layouts": []}
             ]
-        }
+        },
     }
 
     name: str
-    attributes: dict[str, str] = Field(
-        default_factory=dict,
-        description="Custom metadata key-value pairs"
-    )
+    attributes: dict[str, str] = Field(default_factory=dict, description="Custom metadata key-value pairs")
 
     # Change to public names
     nodes_data: Optional[NodeData] = None
@@ -137,46 +108,46 @@ class Project(BaseModel):
     layouts_data: dict[str, LayoutData] = Field(default_factory=dict)
     selections: Optional[list[Selection]] = []
 
-    def add_nodes_bulk(self, 
-                      ids: npt.NDArray[np.int32],
-                      names: list[str],
-                      attributes: Optional[dict[int, dict[str, str]]] = None):
+    def add_nodes_bulk(
+        self, ids: npt.NDArray[np.int32], names: list[str], attributes: Optional[dict[int, dict[str, str]]] = None
+    ) -> None:
         """Efficiently add multiple nodes at once"""
-        self.nodes_data = NodeData(
-            ids=ids,
-            names=names,
-            attributes=attributes or {}
-        )
+        self.nodes_data = NodeData(ids=ids, names=names, attributes=attributes or {})
 
-    def add_layout_bulk(self,
-                       name: str,
-                       node_ids: npt.NDArray[np.int32],
-                       positions: npt.NDArray[np.float32],
-                       colors: npt.NDArray[np.uint8]):
+    def add_layout_bulk(
+        self,
+        name: str,
+        node_ids: npt.NDArray[np.int32],
+        positions: npt.NDArray[np.float32],
+        colors: npt.NDArray[np.uint8],
+    ) -> None:
         """Efficiently add layout data"""
-        self.layouts_data[name] = LayoutData(
-            node_ids=node_ids,
-            positions=positions,
-            colors=colors
-        )
+        self.layouts_data[name] = LayoutData(node_ids=node_ids, positions=positions, colors=colors)
 
-    def add_links_bulk(self,
-                      start_ids: npt.NDArray[np.int32],
-                      end_ids: npt.NDArray[np.int32],
-                      colors: npt.NDArray[np.uint8]):
+    def add_links_bulk(
+        self, start_ids: npt.NDArray[np.int32], end_ids: npt.NDArray[np.int32], colors: npt.NDArray[np.uint8]
+    ) -> None:
         """Efficiently add multiple links at once"""
-        self.links_data = LinkData(
-            start_ids=start_ids,
-            end_ids=end_ids,
-            colors=colors
-        )
+        self.links_data = LinkData(start_ids=start_ids, end_ids=end_ids, colors=colors)
 
-    def model_dump(self) -> dict[str, Any]:
+    def model_dump(
+        self,
+        *,
+        mode: str = "python",
+        include: Any = None,
+        exclude: Any = None,
+        by_alias: bool = False,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        round_trip: bool = False,
+        warnings: Union[bool, str] = True,
+        serialize_as_any: bool = False,
+        context: Any = None,
+    ) -> dict[str, Any]:
         """Custom serialization optimized for speed and memory efficiency"""
         # Convert numpy int32 keys to string keys for JSON compatibility
-        attributes = {
-            str(k): v for k, v in self.nodes_data.attributes.items()
-        } if self.nodes_data else {}
+        attributes = {str(k): v for k, v in self.nodes_data.attributes.items()} if self.nodes_data else {}
 
         return {
             "name": self.name,
@@ -184,38 +155,43 @@ class Project(BaseModel):
             "nodes": {
                 "ids": self.nodes_data.ids.astype(int).tolist() if self.nodes_data else [],
                 "names": self.nodes_data.names if self.nodes_data else [],
-                "attributes": attributes
+                "attributes": attributes,
             },
             "links": {
                 "start_ids": self.links_data.start_ids.astype(int).tolist() if self.links_data else [],
                 "end_ids": self.links_data.end_ids.astype(int).tolist() if self.links_data else [],
-                "colors": self.links_data.colors.tolist() if self.links_data else []
+                "colors": self.links_data.colors.tolist() if self.links_data else [],
             },
             "layouts": {
                 str(name): {  # Convert layout name to string if it isn't already
                     "node_ids": layout.node_ids.astype(int).tolist(),
                     "positions": layout.positions.tolist(),
-                    "colors": layout.colors.tolist()
+                    "colors": layout.colors.tolist(),
                 }
                 for name, layout in self.layouts_data.items()
             },
-            "selections": [s.model_dump() for s in self.selections] if self.selections else []
+            "selections": [s.model_dump() for s in self.selections] if self.selections else [],
         }
 
     @classmethod
-    def model_validate(cls, data: dict[str, Any]) -> "Project":
+    def model_validate(
+        cls,
+        obj: Any,
+        *,
+        strict: Union[bool, None] = None,
+        from_attributes: Union[bool, None] = None,
+        context: Union[Any, None] = None,
+    ) -> "Project":
         """Custom deserialization from efficient storage"""
-        project = cls(
-            name=data["name"],
-            attributes=data.get("attributes", {})
-        )
+        data = obj  # obj will contain our dictionary data
+        project = cls(name=data["name"], attributes=data.get("attributes", {}))
 
         # Load nodes
         if "nodes" in data:
             project.nodes_data = NodeData(
                 ids=np.array(data["nodes"]["ids"], dtype=np.int32),
                 names=data["nodes"]["names"],
-                attributes=data["nodes"]["attributes"]
+                attributes={int(k): v for k, v in data["nodes"]["attributes"].items()},
             )
 
         # Load links
@@ -223,7 +199,7 @@ class Project(BaseModel):
             project.links_data = LinkData(
                 start_ids=np.array(data["links"]["start_ids"], dtype=np.int32),
                 end_ids=np.array(data["links"]["end_ids"], dtype=np.int32),
-                colors=np.array(data["links"]["colors"], dtype=np.uint8)
+                colors=np.array(data["links"]["colors"], dtype=np.uint8),
             )
 
         # Load layouts
@@ -232,7 +208,7 @@ class Project(BaseModel):
                 project.layouts_data[name] = LayoutData(
                     node_ids=np.array(layout_data["node_ids"], dtype=np.int32),
                     positions=np.array(layout_data["positions"], dtype=np.float32),
-                    colors=np.array(layout_data["colors"], dtype=np.uint8)
+                    colors=np.array(layout_data["colors"], dtype=np.uint8),
                 )
 
         # Load selections
@@ -241,33 +217,8 @@ class Project(BaseModel):
 
         return project
 
-    # Add properties for backward compatibility
-    @property
-    def nodes(self) -> list[Node]:
-        """Return nodes in legacy format for compatibility"""
-        if not self.nodes_data:
-            return []
-        return [
-            Node(id=id, name=name, attributes=self.nodes_data.attributes.get(id, {}))
-            for id, name in zip(self.nodes_data.ids, self.nodes_data.names)
-        ]
-
-    @property
-    def links(self) -> list[Link]:
-        """Return links in legacy format for compatibility"""
-        if not self.links_data:
-            return []
-        return [
-            Link(
-                start=start, 
-                end=end, 
-                linkcolor=tuple(color)  # type: ignore
-            )
-            for start, end, color in zip(self.links_data.start_ids, self.links_data.end_ids, self.links_data.colors)
-        ]
-
     @classmethod
-    def load_from_json_file(cls, file_path: Path | str) -> "Project":
+    def load_from_json_file(cls, file_path: Union[Path, str]) -> "Project":
         """Load a project from a JSON file.
 
         Args:
@@ -293,7 +244,7 @@ class Project(BaseModel):
             logger.exception("Failed to load project", error=str(e))
             raise
 
-    def save_to_json_file(self, file_path: Path | str) -> None:
+    def save_to_json_file(self, file_path: Union[Path, str]) -> None:
         """Save the project to a JSON file with optimized performance."""
         file_path = Path(file_path)
         logger.debug("Saving project", file_path=str(file_path))
@@ -307,17 +258,14 @@ class Project(BaseModel):
 
             # Write in binary mode with orjson
             with file_path.open("wb") as f:
-                f.write(orjson.dumps(
-                    data,
-                    option=orjson.OPT_INDENT_2 | orjson.OPT_SERIALIZE_NUMPY
-                ))
+                f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2 | orjson.OPT_SERIALIZE_NUMPY))
 
             logger.info("Project saved successfully", project_name=self.name)
         except Exception as e:
             logger.exception("Failed to save project", error=str(e))
             raise
 
-    def save_to_binary_file(self, file_path: Path | str) -> None:
+    def save_to_binary_file(self, file_path: Union[Path, str]) -> None:
         """Save the project using numpy binary format for large arrays."""
         file_path = Path(file_path)
         logger.debug("Saving project in binary format", file_path=str(file_path))
@@ -353,12 +301,12 @@ class Project(BaseModel):
                     "name": self.name,
                     "attributes": self.attributes,
                     "nodes": {
-                        "attributes": {
-                            str(k): v for k, v in self.nodes_data.attributes.items()
-                        } if self.nodes_data else {}
+                        "attributes": {str(k): v for k, v in self.nodes_data.attributes.items()}
+                        if self.nodes_data
+                        else {}
                     },
                     "layouts": list(self.layouts_data.keys()),
-                    "selections": [s.model_dump() for s in self.selections] if self.selections else []
+                    "selections": [s.model_dump() for s in self.selections] if self.selections else [],
                 }
 
                 # Save metadata
@@ -366,9 +314,9 @@ class Project(BaseModel):
                     f.write(orjson.dumps(metadata, option=orjson.OPT_INDENT_2))
 
                 # Create zip archive
-                with ZipFile(file_path, 'w', compression=ZIP_DEFLATED) as zf:
+                with ZipFile(file_path, "w", compression=ZIP_DEFLATED) as zf:
                     # Add all files from temp directory
-                    for file_path in temp_path.rglob('*'):
+                    for file_path in temp_path.rglob("*"):
                         if file_path.is_file():
                             zf.write(file_path, file_path.relative_to(temp_path))
 
@@ -378,7 +326,7 @@ class Project(BaseModel):
             raise
 
     @classmethod
-    def load_from_binary_file(cls, file_path: Path | str) -> "Project":
+    def load_from_binary_file(cls, file_path: Union[Path, str]) -> "Project":
         """Load a project from a binary format file."""
         file_path = Path(file_path)
         logger.debug("Loading project from binary format", file_path=str(file_path))
@@ -388,7 +336,7 @@ class Project(BaseModel):
                 temp_path = Path(temp_dir)
 
                 # Extract zip archive
-                with ZipFile(file_path, 'r') as zf:
+                with ZipFile(file_path, "r") as zf:
                     zf.extractall(temp_path)
 
                 # Load metadata
@@ -396,10 +344,7 @@ class Project(BaseModel):
                     metadata = orjson.loads(f.read())
 
                 # Create project instance
-                project = cls(
-                    name=metadata["name"],
-                    attributes=metadata.get("attributes", {})
-                )
+                project = cls(name=metadata["name"], attributes=metadata.get("attributes", {}))
 
                 # Load nodes
                 if "nodes" in metadata:
@@ -409,9 +354,7 @@ class Project(BaseModel):
                     project.nodes_data = NodeData(
                         ids=node_ids,
                         names=node_names,
-                        attributes={
-                            int(k): v for k, v in metadata["nodes"]["attributes"].items()
-                        }
+                        attributes={int(k): v for k, v in metadata["nodes"]["attributes"].items()},
                     )
 
                 # Load links if present
@@ -419,7 +362,7 @@ class Project(BaseModel):
                     project.links_data = LinkData(
                         start_ids=np.load(temp_path / "arrays/link_start_ids.npy"),
                         end_ids=np.load(temp_path / "arrays/link_end_ids.npy"),
-                        colors=np.load(temp_path / "arrays/link_colors.npy")
+                        colors=np.load(temp_path / "arrays/link_colors.npy"),
                     )
 
                 # Load layouts
@@ -428,7 +371,7 @@ class Project(BaseModel):
                     project.layouts_data[layout_name] = LayoutData(
                         node_ids=np.load(layout_dir / "node_ids.npy"),
                         positions=np.load(layout_dir / "positions.npy"),
-                        colors=np.load(layout_dir / "colors.npy")
+                        colors=np.load(layout_dir / "colors.npy"),
                     )
 
                 # Load selections
@@ -440,3 +383,15 @@ class Project(BaseModel):
         except Exception as e:
             logger.exception("Failed to load project from binary format", error=str(e))
             raise
+
+    def get_layout_positions(self, layout_name: str = "default") -> npt.NDArray[np.float32]:
+        """Get node positions for a specific layout"""
+        if layout_name not in self.layouts_data:
+            raise LayoutNotFoundError(layout_name)
+        return self.layouts_data[layout_name].positions
+
+    def get_layout_colors(self, layout_name: str = "default") -> npt.NDArray[np.uint8]:
+        """Get node colors for a specific layout"""
+        if layout_name not in self.layouts_data:
+            raise LayoutNotFoundError(layout_name)
+        return self.layouts_data[layout_name].colors

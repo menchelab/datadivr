@@ -45,3 +45,12 @@ class InputLoopInterrupted(Exception):
 
     def __init__(self) -> None:
         super().__init__("Input loop interrupted")
+
+
+class LayoutNotFoundError(ValueError):
+    """Raised when a requested layout is not found in the project."""
+
+    def __init__(self, layout_name: str, available_layouts: list[str]):
+        self.layout_name = layout_name
+        self.available_layouts = available_layouts
+        super().__init__(f"Layout '{layout_name}' not found. " f"Available layouts: {available_layouts}")

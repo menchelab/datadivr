@@ -111,32 +111,32 @@ async def run_client() -> None:
 
 1. **Sum Calculation**:
 
-```python
-await client.send_message(
-    payload={"numbers": [1, 2, 3]},
-    event_name="sum_event"
-)
-```
+   ```python
+   await client.send_message(
+       payload={"numbers": [1, 2, 3]},
+       event_name="sum_event"
+   )
+   ```
 
 2. **Text Messages**:
 
-```python
-await client.send_message(
-    message="Hello everyone!",
-    event_name="msg",
-    to="all"
-)
-```
+   ```python
+   await client.send_message(
+       message="Hello everyone!",
+       event_name="msg",
+       to="all"
+   )
+   ```
 
 3. **Custom Events**:
 
-```python
-await client.send_message(
-    payload={"data": "custom_data"},
-    event_name="custom_event",
-    to="specific_client_id"
-)
-```
+   ```python
+   await client.send_message(
+       payload={"data": "custom_data"},
+       event_name="custom_event",
+       to="specific_client_id"
+   )
+   ```
 
 ## Error Handling
 
@@ -150,20 +150,20 @@ The client handles several error conditions:
 
 1. **Connection**:
 
-```python
-client = WebSocketClient("ws://localhost:8765/ws")
-await client.connect()  # Automatically registers handlers
-```
+   ```python
+   client = WebSocketClient("ws://localhost:8765/ws")
+   await client.connect()  # Automatically registers handlers
+   ```
 
 2. **Message Loop**:
 
-```python
-# Start receiving messages (blocks until connection closes)
-await client.receive_messages()
-```
+   ```python
+   # Start receiving messages (blocks until connection closes)
+   await client.receive_messages()
+   ```
 
 3. **Disconnection**:
 
-```python
-await client.disconnect()  # Clean up connection
-```
+   ```python
+   await client.disconnect()  # Clean up connection
+   ```
