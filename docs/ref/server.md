@@ -35,13 +35,6 @@ if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8765)
 ```
 
-## API Reference
-
-::: datadivr.transport.server
-options:
-show_root_heading: true
-show_source: true
-
 ## Built-in Handlers
 
 The server comes with built-in handlers for common operations:
@@ -148,3 +141,10 @@ except ValueError as e:
                     client_id=client_id)
     raise InvalidMessageFormat()
 ```
+
+## API Reference
+
+::: datadivr.transport.server
+options:
+show_root_heading: true
+show_source: true
