@@ -1,3 +1,6 @@
+# this is now obsolete and will be removed in the next release
+# look at cli.py for the new example
+
 import asyncio
 import json
 from typing import Any, Optional

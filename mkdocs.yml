@@ -44,11 +44,16 @@ nav:
       - Installation: installation.md
       - Command Line Interface: cli.md
   - Reference:
-      - Models: api/models.md
-      - Handlers: api/handlers.md
+      - Models:
+          - Message: ref/model_websocketmessage.md
+          - Project: ref/model_project.md
+      - Handlers:
+          - ref/handlers.md
       - Transport:
-          - Client: api/client.md
-          - Server: api/server.md
+          - Transport: ref/transport.md
+          - Client: ref/client.md
+          - Server: ref/server.md
+      - CLI: ref/cli.md
   - Technical Overview: technical_overview.md
   - Contributing: contributing.md
 
