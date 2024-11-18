@@ -47,20 +47,20 @@ If you are proposing a new feature:
 Ready to contribute? Here's how to set up `datadivr` for local development.
 Please note this documentation assumes you already have `uv` and `Git` installed and ready to go.
 
-1. Fork the `datadivr` repo on GitHub.
+1\. Fork the `datadivr` repo on GitHub.
 
-2. Clone your fork locally:
+2\. Clone your fork locally:
 
-```bash
-cd <directory_in_which_repo_should_be_created>
-git clone git@github.com:menchelab/datadivr.git
-```
+   ```bash
+   cd <directory_in_which_repo_should_be_created>
+   git clone git@github.com:menchelab/datadivr.git
+   ```
 
-3. Now we need to install the environment. Navigate into the directory
+3\. Now we need to install the environment. Navigate into the directory
 
-```bash
-cd datadivr
-```
+   ```bash
+   cd datadivr
+   ```
 
 Then, install and activate the environment with:
 
@@ -68,25 +68,25 @@ Then, install and activate the environment with:
 uv sync
 ```
 
-4. Install pre-commit to run linters/formatters at commit time:
+4\. Install pre-commit to run linters/formatters at commit time:
 
 ```bash
 uv run pre-commit install
 ```
 
-5. Create a branch for local development:
+5\. Create a branch for local development:
 
 ```bash
 git checkout -b name-of-your-bugfix-or-feature
 ```
 
-6. Alternatively you can use vscode devcontainer feature which only requires you to have vscode and docker desktop installed, when you open the project in vscode install the extension and click the reopen in container button
+6\. Alternatively you can use vscode devcontainer feature which only requires you to have vscode and docker desktop installed, when you open the project in vscode install the extension and click the reopen in container button
 
 Now you can make your changes locally.
 
-6. Don't forget to add test cases for your added functionality to the `tests` directory.
+6\. Don't forget to add test cases for your added functionality to the `tests` directory.
 
-7. When you're done making changes, check that your changes pass the formatting tests.
+7\. When you're done making changes, check that your changes pass the formatting tests.
 
 ```bash
 make check
@@ -98,17 +98,14 @@ Now, validate that all unit tests are passing:
 make test
 ```
 
-9. Before raising a pull request you should also run tox.
+9\. Before raising a pull request you should also run tox.
    This will run the tests across different versions of Python:
 
 ```bash
 uv run tox
 ```
 
-This requires you to have multiple versions of python installed.
-This step is also triggered in the CI/CD pipeline, so you could also choose to skip this step locally.
-
-10. Commit your changes and push your branch to GitHub:
+10\. Commit your changes and push your branch to GitHub:
 
 ```bash
 git add .
@@ -116,13 +113,39 @@ git commit -m "Your detailed description of your changes."
 git push origin name-of-your-bugfix-or-feature
 ```
 
-11. Submit a pull request through the GitHub website.
+When writing commit messages, please follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/). This helps maintain a standardized commit history and enables automated tooling. The basic format is:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+Common types include:
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, etc.)
+- `refactor`: Code changes that neither fix bugs nor add features
+- `test`: Adding or modifying tests
+- `chore`: Changes to build process or auxiliary tools
+
+Example commit messages:
+```
+feat(api): add new data validation endpoint
+fix: correct memory leak in processing loop
+docs: update installation instructions
+```
+
+11\. Submit a pull request through the GitHub website.
 
 # Pull Request Guidelines
 
 Before you submit a pull request, check that it meets these guidelines:
 
-1. The pull request should include tests.
+1\. The pull request should include tests.
 
-2. If the pull request adds functionality, the docs should be updated.
+2\. If the pull request adds functionality, the docs should be updated.
    Put your new functionality into a function with a docstring.

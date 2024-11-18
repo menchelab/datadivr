@@ -142,7 +142,7 @@ except ValueError as e:
     raise InvalidMessageFormat()
 ```
 
-## API Reference
+## Reference
 
 ::: datadivr.transport.server
 options:

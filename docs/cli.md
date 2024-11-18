@@ -1,5 +1,17 @@
 # Command Line Interface
 
+To see a list of available commands and options, run:
+
+```bash
+uv run datadivr --help
+```
+
+or
+
+```bash
+python -m datadivr --help
+```
+
 ## Basic Commands
 
 ### Start Server
@@ -13,11 +25,15 @@ Options:
 - `--port`: Port number (default: 8765)
 - `--host`: Host address (default: 127.0.0.1)
 
+(use 0.0.0.0 for host to bind to all interfaces)
+
 ### Start Client
 
 ```bash
 uv run datadivr start-client [--port PORT] [--host HOST]
 ```
+
+This interactive command line client is useful for testing and debugging, sending custom messages etc.
 
 ## Client Input Format
 

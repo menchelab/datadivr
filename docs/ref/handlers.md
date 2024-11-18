@@ -2,7 +2,7 @@
 
 ## Sum Handler
 
-::: datadivr.handlers.builtin.sum_handler
+::: datadivr.handlers
 options:
 show_root_heading: true
 show_source: true
