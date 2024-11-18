@@ -51,16 +51,16 @@ Please note this documentation assumes you already have `uv` and `Git` installed
 
 2\. Clone your fork locally:
 
-   ```bash
-   cd <directory_in_which_repo_should_be_created>
-   git clone git@github.com:menchelab/datadivr.git
-   ```
+```bash
+cd <directory_in_which_repo_should_be_created>
+git clone git@github.com:menchelab/datadivr.git
+```
 
 3\. Now we need to install the environment. Navigate into the directory
 
-   ```bash
-   cd datadivr
-   ```
+```bash
+cd datadivr
+```
 
 Then, install and activate the environment with:
 
@@ -99,7 +99,7 @@ make test
 ```
 
 9\. Before raising a pull request you should also run tox.
-   This will run the tests across different versions of Python:
+This will run the tests across different versions of Python:
 
 ```bash
 uv run tox
@@ -124,6 +124,7 @@ When writing commit messages, please follow the [Conventional Commits specificat
 ```
 
 Common types include:
+
 - `feat`: A new feature
 - `fix`: A bug fix
 - `docs`: Documentation changes
@@ -133,6 +134,7 @@ Common types include:
 - `chore`: Changes to build process or auxiliary tools
 
 Example commit messages:
+
 ```
 feat(api): add new data validation endpoint
 fix: correct memory leak in processing loop
@@ -148,4 +150,4 @@ Before you submit a pull request, check that it meets these guidelines:
 1\. The pull request should include tests.
 
 2\. If the pull request adds functionality, the docs should be updated.
-   Put your new functionality into a function with a docstring.
+Put your new functionality into a function with a docstring.

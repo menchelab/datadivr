@@ -8,4 +8,3 @@ For details about the transport layer, see the [Server](/ref/server/) and [Clien
 options:
 show_root_heading: true
 show_source: true
-

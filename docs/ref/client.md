@@ -161,7 +161,6 @@ The client handles several error conditions:
    await client.disconnect()  # Clean up connection
    ```
 
-
 ## Reference
 
 ::: datadivr.transport.client.WebSocketClient
