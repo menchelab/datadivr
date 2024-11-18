@@ -25,7 +25,7 @@ class NodeData:
     """Efficient storage for large node datasets"""
 
     ids: npt.NDArray[np.int32]  # Array of node IDs
-    names: list[str]  # Parallel array of names
+    names: list[str]  # Parallel array of names, not using numpy dtype=object because actually worse
     attributes: dict[int, dict[str, str]]  # Sparse dictionary of attributes keyed by node ID
 
 
