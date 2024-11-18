@@ -2,4 +2,4 @@
 
 ## WebSocket Server Example
 
-Start a WebSocket server using the CLI: 
+Start a WebSocket server using the CLI:

@@ -68,23 +68,25 @@ class Project(BaseModel):
     """Root model representing a DataDiVR project.
 
     This model contains all data necessary to represent and visualize
-    a network of nodes, their connections, and various layouts.
+    a network of nodes, their connections, and various layouts using
+    efficient data structures for large datasets.
 
     Attributes:
         name: Project display name
         attributes: Optional key-value pairs for project metadata
-        nodes: List of Node objects in the project
-        links: List of Link objects defining node connections
-        layouts: List of Layout configurations
+        nodes_data: Efficient storage for node data (ids, names, and attributes)
+        links_data: Efficient storage for link data (start_ids, end_ids, and colors)
+        layouts_data: Dictionary of layout configurations with efficient array storage
         selections: Optional list of node Selection groups
 
     Example:
         ```python
         project = Project(
             name="My Project",
-            nodes=[Node(id=1, name="Node 1")],
-            links=[],
-            layouts=[],
+            attributes={},
+            nodes_data=NodeData(ids=np.array([1]), names=["Node 1"], attributes={}),
+            links_data=None,
+            layouts_data={},
             selections=[]
         )
         ```
