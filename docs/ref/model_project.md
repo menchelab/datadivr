@@ -53,18 +53,21 @@ Storage for node connections:
 
 The project supports two file formats:
 
-1. **JSON Format**
+#### JSON Format
 
-   - Human-readable format
-   - Uses optimized orjson serialization
-   - Suitable for smaller projects
+- Human-readable format
+- Uses optimized orjson serialization
+- Suitable for very small projects
 
-2. **Binary Format**
-   - Compressed zip file containing:
-     - `metadata.json`: Project metadata and non-array data
-     - `arrays/*.npy`: Binary numpy arrays for large datasets
-   - Optimized for large projects with significant numerical data
-   - Uses numpy's native format for efficient storage of arrays
+#### Binary Format
+
+- Compressed zip file containing:
+  - `metadata.json`: Project metadata and non-array data
+  - `arrays/*.npy`: Binary numpy arrays for large datasets
+- Optimized for large projects with significant numerical data
+- Uses numpy's native format for efficient storage of arrays
+- much smaller file size than JSON
+- faster to load (10x+)
 
 ### Color Representation
 

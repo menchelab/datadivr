@@ -45,7 +45,7 @@ nav:
       - Command Line Interface: cli.md
   - Reference:
       - Models:
-          - Message: ref/model_websocketmessage.md
+          - WebSocketMessage: ref/model_websocketmessage.md
           - Project: ref/model_project.md
       - Handlers:
           - ref/handlers.md
@@ -55,6 +55,7 @@ nav:
           - Server: ref/server.md
       - CLI: ref/cli.md
   - Technical Overview: technical_overview.md
+  - Examples: examples.md
   - Contributing: contributing.md
 
 markdown_extensions:

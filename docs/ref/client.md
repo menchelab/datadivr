@@ -48,13 +48,6 @@ async def run_client() -> None:
 asyncio.run(run_client())
 ```
 
-## API Reference
-
-::: datadivr.transport.client.WebSocketClient
-options:
-show_root_heading: true
-show_source: true
-
 ## Built-in Handlers
 
 The client comes with several built-in handlers:
@@ -167,3 +160,10 @@ The client handles several error conditions:
    ```python
    await client.disconnect()  # Clean up connection
    ```
+
+## Reference
+
+::: datadivr.transport.client.WebSocketClient
+options:
+show_root_heading: true
+show_source: true
