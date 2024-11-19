@@ -5,6 +5,7 @@
 [![codecov](https://codecov.io/gh/menchelab/datadivr/branch/main/graph/badge.svg)](https://codecov.io/gh/menchelab/datadivr)
 [![Commit activity](https://img.shields.io/github/commit-activity/m/menchelab/datadivr)](https://img.shields.io/github/commit-activity/m/menchelab/datadivr)
 [![License](https://img.shields.io/github/license/menchelab/datadivr)](https://img.shields.io/github/license/menchelab/datadivr)
+[![Python versions](https://img.shields.io/pypi/pyversions/datadivr)](https://pypi.org/project/datadivr)
 
 datadivr backend and toolset.
 
