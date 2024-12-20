@@ -10,6 +10,7 @@ from rich.console import Console
 
 from datadivr.exceptions import InputLoopInterrupted
 from datadivr.handlers.builtin import sum_handler  # noqa: F401
+from datadivr.handlers.custom_handlers import get_node_info_handler  # noqa: F401
 from datadivr.transport.client import WebSocketClient
 from datadivr.transport.web_server import add_static_routes
 from datadivr.utils.logging import get_logger, setup_logging

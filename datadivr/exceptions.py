@@ -68,3 +68,10 @@ class AttributeNotFoundError(DataDivrError):
 
     def __init__(self, attribute_name: str):
         super().__init__(f"Attribute '{attribute_name}' not found")
+
+
+class NodeIndexOutOfBoundsError(DataDivrError):
+    """Raised when a node index is out of bounds."""
+
+    def __init__(self, index: int, length: int):
+        super().__init__(f"Index {index} is out of bounds for node data with length {length}")
