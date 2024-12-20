@@ -10,7 +10,7 @@ from datadivr.utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-def visualize_project(project: Project, layout_name: str = "default", zoom_scale: float = 1000.0) -> None:
+def visualize_project(project: Project, layout_name: str = "default", zoom_scale: float = 1.0) -> None:
     """Create an interactive 3D visualization of the project using Plotly with WebGL.
 
     Args:
@@ -42,15 +42,29 @@ def visualize_project(project: Project, layout_name: str = "default", zoom_scale
         outgoing_links = np.bincount(project.links_data.start_ids, minlength=len(node_ids))
 
     # Create hover text
-    hover_text = [
-        f"Node ID: {node_id}<br>"
-        f"X: {pos[0] / zoom_scale:.2f}<br>"
-        f"Y: {pos[1] / zoom_scale:.2f}<br>"
-        f"Z: {pos[2] / zoom_scale:.2f}<br>"
-        f"Incoming Links: {incoming_links[i]}<br>"
-        f"Outgoing Links: {outgoing_links[i]}"
-        for i, (node_id, pos) in enumerate(zip(node_ids, positions))
-    ]
+    hover_text = []
+    for i, (node_id, pos) in enumerate(zip(node_ids, positions)):
+        # Start with basic info
+        text = [
+            f"Node ID: {node_id}",
+            f"X: {pos[0] / zoom_scale:.2f}",
+            f"Y: {pos[1] / zoom_scale:.2f}",
+            f"Z: {pos[2] / zoom_scale:.2f}",
+            f"Incoming Links: {incoming_links[i]}",
+            f"Outgoing Links: {outgoing_links[i]}",
+        ]
+
+        # Add all available attributes
+        if project.nodes_data:
+            for attr_name in project.nodes_data.attribute_names:
+                attr_value = project.nodes_data.get_attribute(attr_name)[i]
+                # Format float values to 2 decimal places
+                if isinstance(attr_value, (float, np.floating)):
+                    text.append(f"{attr_name}: {attr_value:.2f}")
+                else:
+                    text.append(f"{attr_name}: {attr_value}")
+
+        hover_text.append("<br>".join(text))
 
     # Create figure
     fig = go.Figure()

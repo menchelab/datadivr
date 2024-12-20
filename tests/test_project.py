@@ -11,9 +11,11 @@ def sample_project():
 
     # Add nodes
     node_ids = np.array([1, 2, 3], dtype=np.int32)
-    node_names = ["Node 1", "Node 2", "Node 3"]
-    node_attributes = {1: {"type": "A"}, 2: {"type": "B"}}
-    project.add_nodes_bulk(node_ids, node_names, node_attributes)
+    node_attributes = {
+        "names": np.array(["Node 1", "Node 2", "Node 3"], dtype=object),
+        "type": np.array(["A", "B", "C"], dtype=object),
+    }
+    project.add_nodes_bulk(node_ids, node_attributes)
 
     # Add links
     start_ids = np.array([1, 2], dtype=np.int32)
@@ -41,8 +43,8 @@ def test_project_initialization():
 
 def test_add_nodes_bulk(sample_project):
     assert len(sample_project.nodes_data.ids) == 3
-    assert sample_project.nodes_data.names == ["Node 1", "Node 2", "Node 3"]
-    assert sample_project.nodes_data.attributes[1]["type"] == "A"
+    assert sample_project.nodes_data.get_attribute("names").tolist() == ["Node 1", "Node 2", "Node 3"]
+    assert sample_project.nodes_data.get_attribute("type")[0] == "A"
 
 
 def test_add_links_bulk(sample_project):
@@ -74,7 +76,10 @@ def test_save_and_load_json(sample_project, tmp_path):
     loaded_project = Project.load_from_json_file(json_path)
     assert loaded_project.name == sample_project.name
     np.testing.assert_array_equal(loaded_project.nodes_data.ids, sample_project.nodes_data.ids)
-    assert loaded_project.nodes_data.names == sample_project.nodes_data.names
+    assert (
+        loaded_project.nodes_data.get_attribute("names").tolist()
+        == sample_project.nodes_data.get_attribute("names").tolist()
+    )
 
 
 def test_save_and_load_binary(sample_project, tmp_path):
@@ -85,4 +90,7 @@ def test_save_and_load_binary(sample_project, tmp_path):
     loaded_project = Project.load_from_binary_file(binary_path)
     assert loaded_project.name == sample_project.name
     np.testing.assert_array_equal(loaded_project.nodes_data.ids, sample_project.nodes_data.ids)
-    assert loaded_project.nodes_data.names == sample_project.nodes_data.names
+    assert (
+        loaded_project.nodes_data.get_attribute("names").tolist()
+        == sample_project.nodes_data.get_attribute("names").tolist()
+    )

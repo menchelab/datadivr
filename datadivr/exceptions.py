@@ -61,3 +61,10 @@ class StaticDirectoryNotFoundError(DataDivrError):
 
     def __init__(self, directory: str):
         super().__init__(f"Static directory not found: {directory}")
+
+
+class AttributeNotFoundError(DataDivrError):
+    """Raised when attempting to access a non-existent attribute."""
+
+    def __init__(self, attribute_name: str):
+        super().__init__(f"Attribute '{attribute_name}' not found")
