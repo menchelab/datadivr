@@ -29,6 +29,7 @@ from datadivr.exceptions import NotConnectedError
 from datadivr.handlers.registry import HandlerType, get_handlers
 from datadivr.transport.messages import send_message
 from datadivr.transport.models import WebSocketMessage
+from datadivr.utils.logging import get_logger
 
 
 class WebSocketClient:
@@ -59,6 +60,7 @@ class WebSocketClient:
         self.uri = uri
         self.handlers = get_handlers(HandlerType.CLIENT)
         self.websocket: Optional[WebSocketClientProtocol] = None
+        self.logger = get_logger(__name__)
 
     async def connect(self) -> None:
         """Connect to the WebSocket server and send initial handler information."""
@@ -66,25 +68,19 @@ class WebSocketClient:
         await self.send_handler_names()
 
     async def receive_messages(self) -> None:
-        """Listen for incoming messages from the server.
-
-        This method runs in a loop, receiving and handling messages until
-        the connection is closed.
-
-        Raises:
-            NotConnectedError: If called before connecting to the server
-        """
+        """Listen for incoming messages from the server."""
         if not self.websocket:
             raise NotConnectedError()
 
         try:
-            while True:
-                message = await self.websocket.recv()
+            async for message in self.websocket:
                 event_data = json.loads(message)
-                print(f"< received message: {event_data}")
+                self.logger.debug("message_received", event_data=event_data)
                 await self.handle_event(event_data, self.websocket)
         except websockets.exceptions.ConnectionClosed:
-            print("X Connection closed")
+            self.logger.info("connection_closed")
+        finally:
+            await self.disconnect()
 
     async def handle_event(self, event_data: dict, websocket: WebSocketClientProtocol) -> None:
         """Handle an incoming event using registered handlers.
@@ -95,14 +91,14 @@ class WebSocketClient:
         """
         event_name = event_data["event_name"]
         if event_name in self.handlers:
-            print(f"<< handling event: {event_name}")
+            self.logger.info("handling_event", event_name=event_name)
             handler = self.handlers[event_name]
             message = WebSocketMessage.model_validate(event_data)
             response = await handler(message)
             if response and isinstance(response, WebSocketMessage):
                 await send_message(websocket, response)
         else:
-            print(f"<< no handler for event: {event_name}")
+            self.logger.warning("no_handler_found", event_name=event_name)
 
     async def send_message(self, payload: Any, event_name: str, msg: Optional[str] = None, to: str = "others") -> None:
         """Send a message to the server.
@@ -125,8 +121,12 @@ class WebSocketClient:
     async def disconnect(self) -> None:
         """Close the WebSocket connection."""
         if self.websocket:
-            await self.websocket.close()
-            self.websocket = None
+            try:
+                await self.websocket.close()
+            except Exception:
+                self.logger.exception("error_closing_connection")
+            finally:
+                self.websocket = None
 
     async def send_handler_names(self) -> None:
         """Send a message with the names of all registered handlers.
@@ -136,5 +136,5 @@ class WebSocketClient:
         """
         handler_names = list(self.handlers.keys())
         payload = {"handlers": handler_names}
-        print(f">> sending handler names  : {handler_names}")
-        await self.send_message(payload=payload, event_name="connected successfully", to="others")
+        self.logger.info("sending_handler_names", handlers=handler_names)
+        await self.send_message(payload=payload, event_name="CLI_HELLO", to="others")

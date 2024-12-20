@@ -12,18 +12,7 @@ def setup_logging(
     pretty: Optional[bool] = None,
     log_file: Optional[str] = None,
 ) -> None:
-    """Configure logging for the entire application.
-
-    Priority for configuration:
-    1. Environment variables (DATADIVR_LOG_LEVEL, DATADIVR_LOG_PRETTY, DATADIVR_LOG_FILE)
-    2. Function arguments
-    3. Default values
-
-    Args:
-        level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        pretty: If True, use pretty console output, else JSON
-        log_file: Optional file path to write logs to
-    """
+    """Configure logging for the entire application."""
     # Get settings from environment with fallbacks
     level = os.getenv("DATADIVR_LOG_LEVEL", level) or "INFO"
     pretty = os.getenv("DATADIVR_LOG_PRETTY", str(pretty)).lower() != "false" if pretty is not None else True
@@ -32,10 +21,7 @@ def setup_logging(
     # Set log level
     log_level = getattr(logging, level.upper())
 
-    # Debugging: Log the effective log level
-    logging.debug(f"Log level set to: {log_level}")
-
-    # Configure processors with type annotation
+    # Configure processors
     processors: list[
         Callable[[Any, str, MutableMapping[str, Any]], Union[Mapping[str, Any], str, bytes, bytearray, tuple[Any, ...]]]
     ] = [
@@ -45,41 +31,43 @@ def setup_logging(
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.processors.StackInfoRenderer(),
-        #       structlog.processors.format_exc_info,
+        structlog.processors.format_exc_info,
     ]
 
     if log_file:
-        # Use plain renderer for file output
         processors.append(structlog.dev.ConsoleRenderer(colors=False))
     else:
-        # Use colored output for console
         if pretty:
             processors.append(structlog.dev.ConsoleRenderer(colors=True))
         else:
             processors.append(structlog.processors.JSONRenderer())
 
-    # Basic logging configuration
-    config = {
+    # Configure standard logging
+    logging_config = {
         "format": "%(message)s",
         "level": log_level,
+        "force": True,  # Override any existing configuration
     }
 
-    # Debugging: Log the configuration being used
-    logging.debug(f"Logging configuration: {config}")
-
+    # Add either stream or filename, but not both
     if log_file:
-        config["filename"] = log_file
+        logging_config["filename"] = log_file
     else:
-        config["stream"] = sys.stdout
+        logging_config["stream"] = sys.stdout
 
-    logging.basicConfig(**config)
+    logging.basicConfig(**logging_config)
 
+    # Configure structlog
     structlog.configure(
         processors=processors,
-        wrapper_class=structlog.stdlib.BoundLogger,
+        context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
+
+    # Ensure all loggers respect our level setting
+    logging.getLogger().setLevel(log_level)
 
 
 def get_logger(name: str) -> Any:

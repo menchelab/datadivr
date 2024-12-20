@@ -34,10 +34,10 @@ class AuthenticationError(DataDivrError):
 
 
 class UnsupportedWebSocketTypeError(Exception):
-    """Exception raised when an unsupported WebSocket type is used."""
+    """Raised when an unsupported WebSocket type is encountered."""
 
-    def __init__(self) -> None:
-        super().__init__("Unsupported WebSocket type")
+    def __init__(self, message: str = "Unsupported WebSocket type") -> None:
+        super().__init__(message)
 
 
 class InputLoopInterrupted(Exception):
@@ -54,3 +54,10 @@ class LayoutNotFoundError(ValueError):
         self.layout_name = layout_name
         self.available_layouts = available_layouts
         super().__init__(f"Layout '{layout_name}' not found. " f"Available layouts: {available_layouts}")
+
+
+class StaticDirectoryNotFoundError(DataDivrError):
+    """Raised when the static directory for web serving cannot be found."""
+
+    def __init__(self, directory: str):
+        super().__init__(f"Static directory not found: {directory}")

@@ -1,8 +1,5 @@
 import json
-from typing import Any, Optional, Union
-
-from fastapi import WebSocket
-from websockets import WebSocketClientProtocol
+from typing import Any, Optional
 
 from datadivr.exceptions import UnsupportedWebSocketTypeError
 from datadivr.transport.models import WebSocketMessage
@@ -11,33 +8,21 @@ from datadivr.utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-async def send_message(websocket: Union[WebSocket, WebSocketClientProtocol], message: WebSocketMessage) -> None:
-    """Send a message through a WebSocket connection.
-
-    This function handles sending messages through both FastAPI WebSocket and
-    websockets.WebSocketClientProtocol connections.
+async def send_message(websocket: Any, message: WebSocketMessage) -> None:
+    """Send a message over a WebSocket connection.
 
     Args:
-        websocket: The WebSocket connection to send the message through
-        message: The WebSocketMessage to send
-
-    Raises:
-        UnsupportedWebSocketTypeError: If the websocket is not a supported type
-
-    Example:
-        ```python
-        await send_message(ws, WebSocketMessage(
-            event_name="update",
-            payload={"status": "ok"}
-        ))
-        ```
+        websocket: The WebSocket connection to use
+        message: The message to send
     """
     message_data = message.model_dump()
     logger.debug("send_message", message=message_data)
 
-    if isinstance(websocket, WebSocket):
+    # Check if it's a FastAPI WebSocket
+    if hasattr(websocket, "send_json"):
         await websocket.send_json(message_data)
-    elif isinstance(websocket, WebSocketClientProtocol):
+    # Check if it's a websockets WebSocket
+    elif hasattr(websocket, "send"):
         await websocket.send(json.dumps(message_data))
     else:
         raise UnsupportedWebSocketTypeError()

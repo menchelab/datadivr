@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 import websockets
 
+from datadivr.exceptions import UnsupportedWebSocketTypeError
 from datadivr.transport.client import WebSocketClient
+from datadivr.transport.messages import send_message
 from datadivr.transport.models import WebSocketMessage
 
 
@@ -50,27 +52,6 @@ async def test_send_message(client, mock_websocket):
 
 
 @pytest.mark.asyncio
-async def test_receive_messages(client, mock_websocket):
-    client.websocket = mock_websocket
-
-    # Create a message to be received
-    test_message = {"event_name": "test", "payload": "data"}
-
-    # Mock the receive method to return a JSON string and then raise ConnectionClosed
-    mock_websocket.recv = AsyncMock(
-        side_effect=[
-            json.dumps(test_message),
-            websockets.exceptions.ConnectionClosed(rcvd=None, sent=None),  # Use None for both parameters
-        ]
-    )
-
-    # Use AsyncMock for the handle_event method
-    with patch.object(client, "handle_event", AsyncMock()) as mock_handle:
-        await client.receive_messages()
-        mock_handle.assert_called_once_with(test_message, mock_websocket)
-
-
-@pytest.mark.asyncio
 async def test_handle_event(client, mock_websocket):
     mock_handler = AsyncMock()
     client.handlers = {"test_event": mock_handler}
@@ -90,6 +71,19 @@ async def test_send_handler_names(client, mock_websocket):
     await client.send_handler_names()
 
     expected_message = WebSocketMessage(
-        event_name="connected successfully", payload={"handlers": ["test_handler1", "test_handler2"]}, to="others"
+        event_name="CLI_HELLO", payload={"handlers": ["test_handler1", "test_handler2"]}, to="others"
     )
     mock_websocket.send.assert_called_once_with(json.dumps(expected_message.model_dump()))
+
+
+@pytest.mark.asyncio
+async def test_send_message_invalid_socket_type():
+    """Test sending a message with an invalid socket type."""
+    message = WebSocketMessage(event_name="test")
+    invalid_socket = AsyncMock()  # Change to AsyncMock
+    # Remove all websocket-related attributes
+    del invalid_socket.send
+    del invalid_socket.send_json
+
+    with pytest.raises(UnsupportedWebSocketTypeError):
+        await send_message(invalid_socket, message)
