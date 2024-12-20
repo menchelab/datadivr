@@ -8,6 +8,7 @@ def test_setup_logging():
 
 
 def test_get_logger():
+    setup_logging()
     logger1 = get_logger("test1")
     logger2 = get_logger("test2")
     assert logger1 != logger2
