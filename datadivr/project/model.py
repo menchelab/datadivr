@@ -11,6 +11,8 @@ import orjson
 from pydantic import BaseModel, Field
 
 from datadivr.exceptions import AttributeNotFoundError
+from datadivr.project.json import create_links_json, create_nodes_json
+from datadivr.project.textures import create_textures_from_project
 from datadivr.utils.logging import get_logger
 
 # Custom type for RGBA colors - list of 4 numbers: [r, g, b, a]
@@ -479,3 +481,53 @@ class Project(BaseModel):
         if layout_name not in self.layouts_data:
             raise LayoutNotFoundError(layout_name)
         return self.layouts_data[layout_name].colors
+
+    def create_textures(self, output_dir: str = "static/projects/") -> None:
+        """Create textures for the project."""
+        create_textures_from_project(
+            self.name,
+            self.layouts_data,
+            {
+                "start_ids": self.links_data.start_ids,
+                "end_ids": self.links_data.end_ids,
+                "colors": self.links_data.colors,
+            }
+            if self.links_data
+            else None,
+            output_dir,
+        )
+
+    def create_json_files(self, output_dir: str = "static/projects/") -> None:
+        """Create JSON files for nodes and links."""
+        if self.nodes_data:
+            create_nodes_json(
+                self.nodes_data.ids.tolist(),  # Convert ndarray to list
+                [str(i) for i in self.nodes_data.ids],  # Assuming node names are string representations of IDs
+                self.name,
+                output_dir,
+            )
+
+        if self.links_data:
+            create_links_json(list(zip(self.links_data.start_ids, self.links_data.end_ids)), self.name, output_dir)
+
+    def create_project_summary(self, output_dir: str = "static/projects/") -> None:
+        """Create a project summary JSON file."""
+        project_summary = {
+            "name": self.name,
+            "layouts": list(self.layouts_data.keys()),
+            "layoutsRGB": [f"{layout}RGB" for layout in self.layouts_data],
+            "links": ["links_XYZ"],  # Placeholder, adjust as needed
+            "linksRGB": ["links_RGB"],  # Placeholder, adjust as needed
+            "nodecount": len(self.nodes_data.ids) if self.nodes_data else 0,
+            "linkcount": len(self.links_data.start_ids) if self.links_data else 0,
+            "labelcount": 0,  # Placeholder, adjust as needed
+            "annotationTypes": False,  # Placeholder, adjust as needed
+        }
+
+        file_path = Path(output_dir) / self.name / "project.json"
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with file_path.open("w", encoding="utf-8") as f:
+            json.dump(project_summary, f, indent=4)
+
+        logger.info(f"Project summary saved to {file_path}")

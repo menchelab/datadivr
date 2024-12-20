@@ -1,0 +1,11 @@
+{
+    "name": "Cube Example Project",
+    "layouts": ["default"],
+    "layoutsRGB": ["defaultRGB"],
+    "links": ["links_XYZ"],
+    "linksRGB": ["links_RGB"],
+    "nodecount": 8,
+    "linkcount": 12,
+    "labelcount": 0,
+    "annotationTypes": false
+}
