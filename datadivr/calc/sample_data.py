@@ -4,6 +4,7 @@ import time
 
 import numpy as np
 
+from datadivr.project.model import Project
 from datadivr.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -125,3 +126,24 @@ def generate_cube_data() -> tuple:
     ])
 
     return node_ids, cube_coords, nodecol, linklist, linkcol, names
+
+
+def generate_cube_project() -> Project:
+    """Generate a Project instance with cube data."""
+    node_ids, cube_coords, node_colors, linklist, link_colors, names = generate_cube_data()
+
+    # Create a new Project instance
+    project = Project(name="Cube Example Project", attributes={"description": "A sample project showing a cube"})
+
+    # Add nodes, links, and layout to the project
+    project.add_nodes_bulk(
+        ids=node_ids,
+        attributes={
+            "name": names,
+            "avg_position": cube_coords.mean(axis=1),
+        },
+    )
+    project.add_links_bulk(linklist[:, 0], linklist[:, 1], link_colors)
+    project.add_layout_bulk("default", node_ids, cube_coords, node_colors)
+
+    return project

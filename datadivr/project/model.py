@@ -531,3 +531,10 @@ class Project(BaseModel):
             json.dump(project_summary, f, indent=4)
 
         logger.info(f"Project summary saved to {file_path}")
+
+    def create_all_assets(self, output_dir: str = "static/projects/") -> None:
+        """Create all project assets including textures, JSON files, and project summary."""
+        self.create_textures(output_dir)
+        self.create_json_files(output_dir)
+        self.create_project_summary(output_dir)
+        logger.info("All project assets created successfully", project_name=self.name)
