@@ -12,7 +12,10 @@ Example:
     ```
 """
 
+import asyncio
 import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -27,6 +30,38 @@ logger = get_logger(__name__)
 
 # Module-level state
 clients: dict[WebSocket, str] = {}
+tasks: set[asyncio.Task] = set()  # Track all active tasks
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    # This code runs on startup
+    logger.debug("startup_initiated")
+    yield
+    # This code runs on shutdown
+    logger.debug("shutdown_initiated", num_clients=len(clients), num_tasks=len(tasks))
+
+    # Cancel all client connections
+    for websocket in list(clients.keys()):
+        try:
+            await websocket.close()
+            logger.debug("closed_client_connection", client_id=clients[websocket])
+        except Exception as e:
+            logger.exception("client_close_error", error=str(e), client_id=clients[websocket])
+
+    # Cancel all running tasks
+    for task in tasks:
+        task.cancel()
+        logger.debug("cancelled_task", task=str(task))
+
+    # Wait for all tasks to complete
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
+        logger.debug("tasks_completed")
+
+    clients.clear()
+    tasks.clear()
+    logger.debug("shutdown_completed")
 
 
 @app.websocket("/ws")
@@ -38,7 +73,13 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     Args:
         websocket: The WebSocket connection
     """
-    await handle_connection(websocket)
+    # Create a task for handling the connection
+    task = asyncio.create_task(handle_connection(websocket))
+    tasks.add(task)
+    try:
+        await task
+    finally:
+        tasks.discard(task)
 
 
 async def handle_connection(websocket: WebSocket) -> None:

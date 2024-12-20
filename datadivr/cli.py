@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Any
+from typing import Any, Optional
 
 import typer
 import uvicorn
@@ -11,10 +11,12 @@ from rich.console import Console
 from datadivr.exceptions import InputLoopInterrupted
 from datadivr.handlers.builtin import sum_handler  # noqa: F401
 from datadivr.transport.client import WebSocketClient
-from datadivr.transport.server import app
+from datadivr.transport.web_server import add_static_routes
+from datadivr.utils.logging import get_logger, setup_logging
 
 app_cli = typer.Typer()
 console = Console()
+logger = get_logger(__name__)
 
 EXAMPLE_JSON = """EXAMPLES:
 {"event_name": "sum_event", "payload": {"numbers": [391, 29]}}
@@ -86,35 +88,54 @@ def common_options(
 
 
 @app_cli.command()
-def start_server(port: int = 8765, host: str = "127.0.0.1") -> None:
-    """Start the WebSocket server.
+def start_server(
+    port: int = 8765,
+    host: str = "127.0.0.1",
+    static_dir: Optional[str] = typer.Option("./static", help="Directory containing static files to serve"),
+    log_level: str = typer.Option("INFO", help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"),
+    pretty: bool = typer.Option(True, help="Use pretty console output for logs"),
+) -> None:
+    """Start the WebSocket and static file server."""
+    from fastapi import FastAPI
 
-    Args:
-        port: The port to listen on
-        host: The host address to bind to
-    """
-    print("run server")
-    config = uvicorn.Config(app, host=host, port=port, log_level="info")
+    from datadivr.transport.server import app as websocket_app
+
+    # Initialize our structured logging first
+    setup_logging(level=log_level, pretty=pretty)
+
+    # Create single FastAPI app
+    app = FastAPI()
+    app.include_router(websocket_app.router)
+    add_static_routes(app, static_dir=static_dir)
+
+    logger.info("server_starting", host=host, port=port)
+
+    # Configure Uvicorn
+    config = uvicorn.Config(
+        app,
+        host=host,
+        port=port,
+        log_level=log_level.lower(),
+    )
+
+    config.log_config = None
+
     server_instance = uvicorn.Server(config)
     asyncio.run(server_instance.serve())
 
 
 async def run_client(host: str, port: int) -> None:
-    """Run the WebSocket client.
-
-    Args:
-        host: The host to connect to
-        port: The port to connect to
-    """
+    """Run the WebSocket client."""
     client = WebSocketClient(f"ws://{host}:{port}/ws")
 
-    console.print("[blue]Connecting to websocket...[/blue]")
+    logger.info("connecting_to_websocket", host=host, port=port)
     try:
         await client.connect()
     except OSError as e:
-        console.print(f"[red]Failed to connect to websocket: {e}[/red]")
+        logger.exception("websocket_connection_failed", error=str(e))
         return
 
+    logger.debug("showing_example_json", examples=EXAMPLE_JSON)
     console.print(f"Example JSON format: {EXAMPLE_JSON}")
 
     tasks = [
@@ -125,9 +146,10 @@ async def run_client(host: str, port: int) -> None:
     try:
         await asyncio.gather(*tasks)
     except InputLoopInterrupted:
+        logger.info("input_loop_interrupted")
         console.print("\n[yellow]Input loop interrupted. Exiting...[/yellow]")
     except Exception as e:
-        console.print(f"[red]Error: {e}[/red]")
+        logger.exception("client_error", error=str(e))
     finally:
         for task in tasks:
             task.cancel()
@@ -135,14 +157,14 @@ async def run_client(host: str, port: int) -> None:
 
 
 @app_cli.command()
-def start_client(port: int = 8765, host: str = "127.0.0.1") -> None:
-    """Start an interactive WebSocket client.
+def start_client(
+    port: int = 8765,
+    host: str = "127.0.0.1",
+) -> None:
+    """Start an interactive WebSocket client."""
+    setup_logging()
 
-    Args:
-        port: The port to connect to
-        host: The host address to connect to
-    """
-    console.print("[blue]starting client...[/blue]")
+    logger.info("client_starting", host=host, port=port)
     asyncio.run(run_client(host, port))
 
 

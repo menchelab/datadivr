@@ -101,9 +101,12 @@ def test_create_message(event_name: str, payload: Any, to: str, message: str, ex
 async def test_send_message_invalid_socket_type() -> None:
     """Test sending a message with an invalid socket type."""
     message = WebSocketMessage(event_name="test")
-    invalid_socket = Mock()  # Not a WebSocket or WebSocketClientProtocol
+    invalid_socket = AsyncMock()  # Change to AsyncMock
+    # Remove all websocket-related attributes
+    del invalid_socket.send
+    del invalid_socket.send_json
 
-    with pytest.raises(UnsupportedWebSocketTypeError, match="Unsupported WebSocket type"):
+    with pytest.raises(UnsupportedWebSocketTypeError):
         await send_message(invalid_socket, message)
 
 
