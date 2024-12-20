@@ -7,6 +7,7 @@ docs/source
 
 # temporary folder
 tmp/
+static/projects/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

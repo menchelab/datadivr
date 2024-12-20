@@ -91,9 +91,9 @@ def common_options(
 def start_server(
     port: int = 8765,
     host: str = "127.0.0.1",
-    static_dir: Optional[str] = typer.Option("./static", help="Directory containing static files to serve"),
-    log_level: str = typer.Option("INFO", help="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"),
-    pretty: bool = typer.Option(True, help="Use pretty console output for logs"),
+    static_dir: Optional[str] = "./static",
+    log_level: str = "INFO",
+    pretty: bool = True,
 ) -> None:
     """Start the WebSocket and static file server."""
     from fastapi import FastAPI
@@ -106,7 +106,10 @@ def start_server(
     # Create single FastAPI app
     app = FastAPI()
     app.include_router(websocket_app.router)
-    add_static_routes(app, static_dir=static_dir)
+
+    # Ensure static_dir is a string
+    static_dir_path = str(static_dir) if static_dir else "./static"
+    add_static_routes(app, static_dir=static_dir_path)
 
     logger.info("server_starting", host=host, port=port)
 

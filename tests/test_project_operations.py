@@ -3,27 +3,32 @@ import os
 import numpy as np
 import pytest
 
-from datadivr.calc import create_sample_data
+from datadivr.calc.sample_data import generate_cube_data
 from datadivr.project.model import Project
 
 
 @pytest.fixture
 def sample_project():
-    """Create a sample project with test data."""
-    project = Project(name="Test Project", attributes={"description": "Test project with sample data"})
+    """Create a sample project with cube data."""
+    project = Project(name="Test Project", attributes={"description": "Test project with cube data"})
 
-    # Create small test dataset
-    n_nodes = 10
-    n_links = 20
-    n_layouts = 1
-    data = create_sample_data(n_nodes=n_nodes, n_links=n_links, n_layouts=n_layouts)
+    # Generate cube data
+    node_ids, cube_coords, node_colors, linklist, link_colors, names = generate_cube_data()
 
-    # Add data to project
-    project.add_nodes_bulk(*data[:3])
-    project.add_links_bulk(*data[5:])
+    # Add nodes with attributes
+    project.add_nodes_bulk(
+        ids=node_ids,
+        attributes={
+            "name": names,
+            "avg_position": cube_coords.mean(axis=1),  # Calculate average of x,y,z coordinates
+        },
+    )
+
+    # Add links
+    project.add_links_bulk(linklist[:, 0], linklist[:, 1], link_colors)
 
     # Add layout
-    project.add_layout_bulk("default", data[0], data[3][0], data[4][0])
+    project.add_layout_bulk("default", node_ids, cube_coords, node_colors)
 
     return project
 
@@ -114,8 +119,13 @@ def test_multiple_save_load_formats(sample_project, tmp_path):
 
     # Check nodes data
     assert np.array_equal(final_project.nodes_data.ids, sample_project.nodes_data.ids)
-    assert final_project.nodes_data.names == sample_project.nodes_data.names
-    assert final_project.nodes_data.attributes == sample_project.nodes_data.attributes
+    assert (
+        final_project.nodes_data.get_attribute("name").tolist()
+        == sample_project.nodes_data.get_attribute("name").tolist()
+    )
+    assert np.array_equal(
+        final_project.nodes_data.get_attribute("avg_position"), sample_project.nodes_data.get_attribute("avg_position")
+    )
 
     # Check links data
     assert np.array_equal(final_project.links_data.start_ids, sample_project.links_data.start_ids)
