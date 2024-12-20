@@ -32,6 +32,9 @@ def setup_logging(
     # Set log level
     log_level = getattr(logging, level.upper())
 
+    # Debugging: Log the effective log level
+    logging.debug(f"Log level set to: {log_level}")
+
     # Configure processors with type annotation
     processors: list[
         Callable[[Any, str, MutableMapping[str, Any]], Union[Mapping[str, Any], str, bytes, bytearray, tuple[Any, ...]]]
@@ -60,6 +63,9 @@ def setup_logging(
         "format": "%(message)s",
         "level": log_level,
     }
+
+    # Debugging: Log the configuration being used
+    logging.debug(f"Logging configuration: {config}")
 
     if log_file:
         config["filename"] = log_file
