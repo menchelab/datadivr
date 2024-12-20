@@ -10,7 +10,7 @@ import numpy.typing as npt
 import orjson
 from pydantic import BaseModel, Field
 
-from datadivr.exceptions import AttributeNotFoundError
+from datadivr.exceptions import AttributeNotFoundError, NodeIndexOutOfBoundsError
 from datadivr.project.json import create_links_json, create_nodes_json
 from datadivr.project.textures import create_textures_from_project
 from datadivr.utils.logging import get_logger
@@ -55,9 +55,16 @@ class NodeData:
 
     def get_attribute(self, name: str) -> npt.NDArray:
         """Get attribute array by name"""
+        if name not in self.attribute_names:
+            logger.error(
+                "Requested attribute not found", requested_attribute=name, available_attributes=self.attribute_names
+            )
+            raise AttributeNotFoundError(name)
+
         for attr_dict in [self.str_attributes, self.float_attributes, self.int_attributes, self.bool_attributes]:
             if name in attr_dict:
                 return attr_dict[name]
+        # This point should not be reached due to the check above
         raise AttributeNotFoundError(name)
 
     @property
@@ -67,6 +74,17 @@ class NodeData:
         for attr_dict in [self.str_attributes, self.float_attributes, self.int_attributes, self.bool_attributes]:
             names.update(attr_dict.keys())
         return names
+
+    def get_attributes_by_index(self, index: int) -> dict[str, Any]:
+        """Get all attributes for a node by its index."""
+        if index < 0 or index >= len(self.ids):
+            raise NodeIndexOutOfBoundsError(index, len(self.ids))
+
+        attributes = {}
+        for attr_dict in [self.str_attributes, self.float_attributes, self.int_attributes, self.bool_attributes]:
+            for name, values in attr_dict.items():
+                attributes[name] = values[index]
+        return attributes
 
 
 @dataclass

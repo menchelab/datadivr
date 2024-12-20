@@ -37,7 +37,15 @@ tasks: set[asyncio.Task] = set()  # Track all active tasks
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # This code runs on startup
     logger.debug("startup_initiated")
+
+    # Log registered handlers
+    server_handlers = get_handlers(HandlerType.SERVER)
+    client_handlers = get_handlers(HandlerType.CLIENT)
+    logger.info("registered_server_handlers", handlers=list(server_handlers.keys()))
+    logger.info("registered_client_handlers", handlers=list(client_handlers.keys()))
+
     yield
+
     # This code runs on shutdown
     logger.debug("shutdown_initiated", num_clients=len(clients), num_tasks=len(tasks))
 

@@ -10,6 +10,7 @@ from rich.console import Console
 
 from datadivr.exceptions import InputLoopInterrupted
 from datadivr.handlers.builtin import sum_handler  # noqa: F401
+from datadivr.handlers.custom_handlers import get_node_info_handler  # noqa: F401
 from datadivr.transport.client import WebSocketClient
 from datadivr.transport.web_server import add_static_routes
 from datadivr.utils.logging import get_logger, setup_logging
@@ -138,7 +139,6 @@ async def run_client(host: str, port: int) -> None:
         logger.exception("websocket_connection_failed", error=str(e))
         return
 
-    logger.debug("showing_example_json", examples=EXAMPLE_JSON)
     console.print(f"Example JSON format: {EXAMPLE_JSON}")
 
     tasks = [

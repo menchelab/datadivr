@@ -98,7 +98,9 @@ class WebSocketClient:
             if response and isinstance(response, WebSocketMessage):
                 await send_message(websocket, response)
         else:
-            self.logger.warning("no_handler_found", event_name=event_name)
+            self.logger.debug(
+                "no_handler_for_event", event_name=event_name, event_data=json.dumps(event_data, indent=2)
+            )
 
     async def send_message(self, payload: Any, event_name: str, msg: Optional[str] = None, to: str = "others") -> None:
         """Send a message to the server.
