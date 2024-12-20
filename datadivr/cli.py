@@ -139,7 +139,6 @@ async def run_client(host: str, port: int) -> None:
         logger.exception("websocket_connection_failed", error=str(e))
         return
 
-    logger.debug("showing_example_json", examples=EXAMPLE_JSON)
     console.print(f"Example JSON format: {EXAMPLE_JSON}")
 
     tasks = [
