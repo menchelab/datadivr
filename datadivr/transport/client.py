@@ -66,7 +66,7 @@ class WebSocketClient:
         """Connect to the WebSocket server and send initial handler information."""
         try:
             self.websocket = await websockets.connect(self.uri)
-            await self.send_handler_names()
+            # await self.send_handler_names()
         except ConnectionRefusedError as e:
             self.logger.exception("connection_refused", error=str(e))
             raise
