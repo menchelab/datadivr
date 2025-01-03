@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/github/license/menchelab/datadivr)](https://img.shields.io/github/license/menchelab/datadivr)
 [![Python versions](https://img.shields.io/pypi/pyversions/datadivr)](https://pypi.org/project/datadivr)
 
-datadivr backend and toolset.
+datadivr is a backend and toolset designed for managing network graph projects with real-time server functionalities tailored for VR clients.
 
 - **Github repository**: <https://github.com/menchelab/datadivr/>
 - **Documentation** <https://menchelab.github.io/datadivr/>

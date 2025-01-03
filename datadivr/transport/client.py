@@ -64,8 +64,15 @@ class WebSocketClient:
 
     async def connect(self) -> None:
         """Connect to the WebSocket server and send initial handler information."""
-        self.websocket = await websockets.connect(self.uri)
-        await self.send_handler_names()
+        try:
+            self.websocket = await websockets.connect(self.uri)
+            await self.send_handler_names()
+        except ConnectionRefusedError as e:
+            self.logger.exception("connection_refused", error=str(e))
+            raise
+        except Exception as e:
+            self.logger.exception("unexpected_error_during_connection", error=str(e))
+            raise
 
     async def receive_messages(self) -> None:
         """Listen for incoming messages from the server."""

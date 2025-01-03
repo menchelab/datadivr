@@ -7,6 +7,12 @@ from typing import Any, Callable, Optional, Union
 import structlog
 
 
+class InvalidLogLevelError(ValueError):
+    def __init__(self, level: str, valid_levels: set[str]):
+        message = f"Invalid log level: {level}. Must be one of {valid_levels}"
+        super().__init__(message)
+
+
 def setup_logging(
     level: Optional[str] = None,
     pretty: Optional[bool] = None,
@@ -17,6 +23,11 @@ def setup_logging(
     level = os.getenv("DATADIVR_LOG_LEVEL", level) or "INFO"
     pretty = os.getenv("DATADIVR_LOG_PRETTY", str(pretty)).lower() != "false" if pretty is not None else True
     log_file = os.getenv("DATADIVR_LOG_FILE", log_file)
+
+    # Validate log level
+    valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+    if level.upper() not in valid_levels:
+        raise InvalidLogLevelError(level, valid_levels)
 
     # Set log level
     log_level = getattr(logging, level.upper())
@@ -31,8 +42,11 @@ def setup_logging(
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
     ]
+
+    # Conditionally add the format_exc_info processor
+    if log_level == logging.DEBUG:
+        processors.append(structlog.processors.format_exc_info)
 
     if log_file:
         processors.append(structlog.dev.ConsoleRenderer(colors=False))

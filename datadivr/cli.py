@@ -136,7 +136,7 @@ async def run_client(host: str, port: int) -> None:
     try:
         await client.connect()
     except OSError as e:
-        logger.exception("websocket_connection_failed", error=str(e))
+        logger.error("websocket_connection_failed", error=str(e))  # noqa: TRY400
         return
 
     console.print(f"Example JSON format: {EXAMPLE_JSON}")
@@ -152,7 +152,7 @@ async def run_client(host: str, port: int) -> None:
         logger.info("input_loop_interrupted")
         console.print("\n[yellow]Input loop interrupted. Exiting...[/yellow]")
     except Exception as e:
-        logger.exception("client_error", error=str(e))
+        logger.error("client_error", error=str(e))  # noqa: TRY400
     finally:
         for task in tasks:
             task.cancel()
