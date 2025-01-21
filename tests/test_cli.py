@@ -99,17 +99,9 @@ def test_start_client(cli_runner):
 async def test_run_client():
     """Test the run_client function directly."""
     mock_client = AsyncMock(spec=WebSocketClient)
-    mock_tasks = []
-
-    def mock_create_task(coro):
-        task = AsyncMock()
-        task.cancel = Mock()  # Regular Mock since cancel is synchronous
-        mock_tasks.append(task)
-        return task
 
     with (
         patch("datadivr.cli.WebSocketClient", return_value=mock_client),
-        patch("asyncio.create_task", side_effect=mock_create_task),
         patch("asyncio.gather", AsyncMock()),
         patch("datadivr.cli.input_loop", AsyncMock()),
     ):
@@ -117,10 +109,7 @@ async def test_run_client():
 
         mock_client.connect.assert_awaited_once()
         mock_client.disconnect.assert_awaited_once()
-
-        assert len(mock_tasks) == 2
-        for task in mock_tasks:
-            task.cancel.assert_called_once()
+        # No more task assertions since we're using gather directly
 
 
 @pytest.mark.asyncio
@@ -132,24 +121,16 @@ async def test_run_client_connection_error():
     with patch("datadivr.cli.WebSocketClient", return_value=mock_client):
         await run_client("localhost", 8765)
         mock_client.connect.assert_awaited_once()
-        mock_client.disconnect.assert_not_called()
+        mock_client.disconnect.assert_awaited_once()  # We now always call disconnect
 
 
 @pytest.mark.asyncio
 async def test_run_client_general_error():
     """Test handling of general errors in run_client."""
     mock_client = AsyncMock(spec=WebSocketClient)
-    mock_tasks = []
-
-    def mock_create_task(coro):
-        task = AsyncMock()
-        task.cancel = Mock()
-        mock_tasks.append(task)
-        return task
 
     with (
         patch("datadivr.cli.WebSocketClient", return_value=mock_client),
-        patch("asyncio.create_task", side_effect=mock_create_task),
         patch("asyncio.gather", AsyncMock(side_effect=Exception("Test error"))),
         patch("datadivr.cli.input_loop", AsyncMock()),
     ):
@@ -157,7 +138,4 @@ async def test_run_client_general_error():
 
         mock_client.connect.assert_awaited_once()
         mock_client.disconnect.assert_awaited_once()
-
-        assert len(mock_tasks) == 2
-        for task in mock_tasks:
-            task.cancel.assert_called_once()
+        # No more task assertions

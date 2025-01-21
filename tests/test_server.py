@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 from fastapi.websockets import WebSocket, WebSocketDisconnect
+from structlog.testing import capture_logs
 
 from datadivr.exceptions import InvalidMessageFormat
 from datadivr.transport.models import WebSocketMessage
@@ -12,6 +13,7 @@ from datadivr.transport.server import (
     clients,
     handle_connection,
     handle_msg,
+    websocket_endpoint,
 )
 
 
@@ -125,31 +127,40 @@ async def test_broadcast_to_specific_client(websocket_mock, clear_clients):
 
 
 @pytest.mark.asyncio
-async def test_invalid_message_format(websocket_mock, clear_clients):
-    """Test handling invalid message format"""
-    # Set up the mock to first accept connection, then return invalid message
-    websocket_mock.receive_json.side_effect = [
-        {
-            "invalid_field": "value",  # Missing required fields
-        }
-    ]
+async def test_invalid_message_format():
+    """Test handling of invalid message format."""
+    mock_websocket = AsyncMock(spec=WebSocket)
+    mock_websocket.receive_json.return_value = {"invalid": "message"}
 
-    with pytest.raises(InvalidMessageFormat):
-        await handle_connection(websocket_mock)
+    with (
+        pytest.raises(InvalidMessageFormat),
+        capture_logs() as captured,  # Use structlog's test utility
+    ):
+        await websocket_endpoint(mock_websocket)
 
-    websocket_mock.accept.assert_called_once()
+    # Verify log was captured without warning
+    assert any(log["event"] == "invalid_message_format" for log in captured)
 
 
 @pytest.mark.asyncio
-async def test_broadcast_error_handling(websocket_mock, clear_clients):
-    """Test error handling during broadcast"""
-    clients[websocket_mock] = "test_client"
-    websocket_mock.send_json.side_effect = Exception("Test error")
+async def test_broadcast_error_handling():
+    """Test error handling during broadcast."""
+    mock_websocket = AsyncMock(spec=WebSocket)
+    mock_websocket.send_json.side_effect = Exception("Test error")
 
-    message = WebSocketMessage(event_name="test_event", payload={"data": "test"}, to="all")
+    # Add the websocket to the clients dictionary
+    clients[mock_websocket] = "test_client"
 
-    # Should not raise exception
-    await broadcast(message, AsyncMock(spec=WebSocket))
+    message = WebSocketMessage(event_name="test", to="all")
+
+    with capture_logs() as captured:  # Use structlog's test utility
+        await broadcast(message, mock_websocket)
+
+    # Verify log was captured without warning
+    assert any(log["event"] == "broadcast_error" for log in captured)
+
+    # Clean up
+    clients.clear()
 
 
 @pytest.mark.asyncio

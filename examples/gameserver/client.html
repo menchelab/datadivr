@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Game Client</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+    />
+    <style>
+      #map {
+        height: 600px;
+        width: 100%;
+        margin-top: 20px;
+      }
+      .controls {
+        padding: 20px;
+      }
+      #log {
+        margin-top: 20px;
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+      }
+      .arrow-marker {
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform-origin: center center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls">
+      <input type="text" id="nameInput" placeholder="Enter your name" />
+      <button id="setNameButton">Set Name</button>
+      <div>
+        Direction:
+        <input type="range" id="directionSlider" min="0" max="360" value="90" />
+        <span id="directionValue">90°</span>
+      </div>
+      <div id="status">Disconnected</div>
+    </div>
+
+    <div id="map"></div>
+    <div id="log"></div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      crossorigin=""
+    ></script>
+    <script>
+      (() => {
+        const WS_URL = "ws://localhost:8765/ws";
+        const DEFAULT_VIEW = [48.2082, 16.3738];
+        const DEFAULT_ZOOM = 13;
+        const CIRCLE_RADIUS = 100000; // 100 km
+
+        let ws;
+        let map;
+        let myMarker;
+        let myCircle;
+        let markers = [];
+        let currentDirection = 90;
+
+        /**
+         * Initialize the map with Leaflet.
+         */
+        const initMap = () => {
+          map = L.map("map").setView(DEFAULT_VIEW, DEFAULT_ZOOM);
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+          }).addTo(map);
+
+          map.on("click", onMapClick);
+        };
+
+        /**
+         * Handle map click events.
+         * @param {Object} e - Leaflet event object.
+         */
+        const onMapClick = (e) => {
+          const { lat, lng } = e.latlng;
+
+          if (myMarker) {
+            myMarker.setLatLng([lat, lng]);
+          } else {
+            myMarker = createArrowMarker([lat, lng], currentDirection).addTo(
+              map,
+            );
+          }
+
+          if (myCircle) {
+            myCircle.setLatLng([lat, lng]);
+          } else {
+            myCircle = L.circle([lat, lng], { radius: CIRCLE_RADIUS }).addTo(
+              map,
+            );
+          }
+
+          const message = {
+            event_name: "GAMESERVER_INFO_UPDATE",
+            to: "others",
+            payload: {
+              latitude: lat,
+              longitude: lng,
+              altitude: 500,
+              direction: currentDirection,
+            },
+          };
+
+          sendMessage(message);
+        };
+
+        /**
+         * Establish a WebSocket connection.
+         */
+        const connectWebSocket = () => {
+          ws = new WebSocket(WS_URL);
+
+          ws.onopen = () => {
+            updateStatus("Connected");
+          };
+
+          ws.onclose = () => {
+            updateStatus("Disconnected");
+            setTimeout(connectWebSocket, 5000);
+          };
+
+          ws.onmessage = handleWebSocketMessage;
+        };
+
+        /**
+         * Send a message through WebSocket.
+         * @param {Object} message - The message object to send.
+         */
+        const sendMessage = (message) => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(message));
+          }
+        };
+
+        /**
+         * Handle incoming WebSocket messages.
+         * @param {MessageEvent} event - The message event.
+         */
+        const handleWebSocketMessage = (event) => {
+          console.log("Raw WebSocket message:", event.data);
+          try {
+            const data = JSON.parse(event.data);
+            if (data.event_name === "GAMESERVER_NEARBY_UPDATE") {
+              updateNearbyClients(data.payload.nearby_clients);
+            }
+            logMessage(data);
+          } catch (error) {
+            console.error("Error parsing WebSocket message:", error);
+          }
+        };
+
+        /**
+         * Update the status display.
+         * @param {string} status - The status text.
+         */
+        const updateStatus = (status) => {
+          const statusDiv = document.getElementById("status");
+          statusDiv.textContent = status;
+        };
+
+        /**
+         * Set the player's name and send it to the server.
+         */
+        const setName = () => {
+          const nameInput = document.getElementById("nameInput");
+          const name = nameInput.value.trim();
+
+          if (name) {
+            const message = {
+              event_name: "GAMESERVER_SET_NAME",
+              to: "others",
+              payload: {
+                name: name,
+              },
+            };
+            sendMessage(message);
+          }
+        };
+
+        /**
+         * Clear all existing markers from the map.
+         */
+        const clearMarkers = () => {
+          markers.forEach((marker) => map.removeLayer(marker));
+          markers = [];
+        };
+
+        /**
+         * Update nearby clients on the map.
+         * @param {Array} clients - List of nearby clients.
+         */
+        const updateNearbyClients = (clients) => {
+          clearMarkers();
+
+          clients.forEach((client) => {
+            const { name, latitude, longitude, direction = 0 } = client;
+            if (latitude && longitude && name) {
+              const marker = createArrowMarker([latitude, longitude], direction)
+                .bindTooltip(name, {
+                  permanent: true,
+                  direction: "right",
+                  offset: [20, 0],
+                  opacity: 0.7,
+                })
+                .addTo(map);
+              markers.push(marker);
+            }
+          });
+        };
+
+        /**
+         * Log messages to the log div.
+         * @param {Object} data - The data object from WebSocket.
+         */
+        const logMessage = (data) => {
+          const logDiv = document.getElementById("log");
+
+          if (data.payload?.nearby_clients) {
+            data.payload.nearby_clients.forEach((client) => {
+              const {
+                name = "Unknown",
+                latitude = "Unknown",
+                longitude = "Unknown",
+                direction = "Unknown",
+              } = client;
+              const message = `Client: ${name}, Position: (${latitude}, ${longitude}), Direction: ${direction}°`;
+              const logEntry = document.createElement("div");
+              logEntry.textContent = message;
+              logDiv.appendChild(logEntry);
+            });
+            logDiv.scrollTop = logDiv.scrollHeight;
+          }
+        };
+
+        /**
+         * Initialize event listeners.
+         */
+        const initEventListeners = () => {
+          const setNameButton = document.getElementById("setNameButton");
+          setNameButton.addEventListener("click", setName);
+
+          const directionSlider = document.getElementById("directionSlider");
+          const directionValue = document.getElementById("directionValue");
+
+          directionSlider.addEventListener("input", (e) => {
+            currentDirection = parseInt(e.target.value);
+            directionValue.textContent = `${currentDirection}°`;
+            if (myMarker) {
+              const currentLatLng = myMarker.getLatLng();
+              myMarker.remove();
+              myMarker = createArrowMarker(
+                [currentLatLng.lat, currentLatLng.lng],
+                currentDirection,
+              ).addTo(map);
+            }
+          });
+        };
+
+        /**
+         * Create an arrow marker with the specified direction
+         * @param {Array} latlng - The [lat, lng] position
+         * @param {number} direction - Direction in degrees
+         * @returns {L.Marker} - Leaflet marker
+         */
+        const createArrowMarker = (latlng, direction) => {
+          const arrowIcon = L.divIcon({
+            html: `<div class="arrow-marker" style="transform: rotate(${
+              direction - 90
+            }deg);">➤</div>`,
+            className: "",
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+          });
+
+          return L.marker(latlng, { icon: arrowIcon });
+        };
+
+        /**
+         * Initialize the application.
+         */
+        const init = () => {
+          initMap();
+          connectWebSocket();
+          initEventListeners();
+        };
+
+        window.onload = init;
+      })();
+    </script>
+  </body>
+</html>

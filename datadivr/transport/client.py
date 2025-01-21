@@ -81,8 +81,9 @@ class WebSocketClient:
 
         try:
             async for message in self.websocket:
+                self.logger.info("raw_message_received", raw_message=message)
                 event_data = json.loads(message)
-                self.logger.debug("message_received", event_data=event_data)
+                self.logger.info("message_received", event_data=event_data)
                 await self.handle_event(event_data, self.websocket)
         except websockets.exceptions.ConnectionClosed:
             self.logger.info("connection_closed")

@@ -1,6 +1,7 @@
-from typing import Any, ClassVar, Optional
+from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from fastapi import WebSocket
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class WebSocketMessage(BaseModel):
@@ -16,6 +17,7 @@ class WebSocketMessage(BaseModel):
         to: The recipient identifier (defaults to "others")
         from_id: The sender identifier (defaults to "server")
         message: Optional text message content
+        websocket: Optional WebSocket reference
 
     Example:
         ```python
@@ -34,10 +36,12 @@ class WebSocketMessage(BaseModel):
     to: str = Field(default="others")
     from_id: str = Field(default="server")
     message: Optional[str] = None
+    websocket: Optional[WebSocket] = Field(default=None, exclude=True)
 
-    ConfigDict: ClassVar[dict] = {
-        "populate_by_name": True,
-        "json_schema_extra": {
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,  # Allow WebSocket type
+        populate_by_name=True,
+        json_schema_extra={
             "example": {
                 "event_name": "sum_event",
                 "payload": {"numbers": [1, 2, 3]},
@@ -46,4 +50,4 @@ class WebSocketMessage(BaseModel):
                 "message": "Calculate sum",
             }
         },
-    }
+    )
