@@ -9,20 +9,44 @@
       crossorigin=""
     />
     <style>
-      #map {
-        height: 800px;
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
         width: 100%;
-        margin-top: 20px;
+      }
+      #map {
+        height: 100vh;
+        width: 100%;
       }
       .controls {
-        padding: 20px;
-      }
-      #log {
-        margin-top: 20px;
-        max-height: 200px;
-        overflow-y: auto;
-        border: 1px solid #ccc;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+
+        background: rgba(255, 255, 255, 0.9);
         padding: 10px;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        min-width: 200px;
+      }
+      #nameInput {
+        padding: 5px;
+        margin-right: 10px;
+      }
+      #status {
+        margin-top: 5px;
+        font-size: 0.9em;
+      }
+
+      #status.connected {
+        color: #2ecc71;
+      }
+
+      #status.disconnected {
+        color: #e74c3c;
       }
       .arrow-marker {
         font-size: 20px;
@@ -31,22 +55,37 @@
         justify-content: center;
         transform-origin: center center;
       }
+      .client-list {
+        margin-top: 10px;
+        font-size: 0.9em;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      .client-item {
+        border-bottom: 1px solid #eee;
+        padding: 5px 0;
+      }
+      .client-item:last-child {
+        border-bottom: none;
+      }
+      .client-name {
+        font-weight: bold;
+      }
+      .client-details {
+        color: #666;
+        font-family: monospace;
+        font-size: 0.9em;
+      }
     </style>
   </head>
   <body>
     <div class="controls">
       <input type="text" id="nameInput" placeholder="Enter your name" />
-      <button id="setNameButton">Set Name</button>
-      <div>
-        Direction:
-        <input type="range" id="directionSlider" min="0" max="360" value="90" />
-        <span id="directionValue">90°</span>
-      </div>
       <div id="status">Disconnected</div>
+      <div class="client-list" id="clientList"></div>
     </div>
 
     <div id="map"></div>
-    <div id="log"></div>
 
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -60,6 +99,8 @@
         const DEFAULT_ZOOM = 13;
         const CIRCLE_RADIUS = 100000; // 100 km
         // this is just a helper circle, the actually detection circle/calc is done serverside
+
+        const SLIDE_DURATION = 100; // ms for position update animation
 
         let ws;
         let map;
@@ -79,6 +120,7 @@
 
           map.on("click", onMapClick);
 
+          // if shift key is pressed, update the marker position and report to server continuously
           map.on("mousemove", (e) => {
             if (e.originalEvent.shiftKey) {
               updateMarkerPosition(e.latlng);
@@ -92,6 +134,18 @@
          */
         const onMapClick = (e) => {
           updateMarkerPosition(e.latlng);
+        };
+
+        /**
+         * Update the connection status display
+         * @param {string} status - The status message to display
+         */
+        const updateStatus = (status) => {
+          const statusElement = document.getElementById("status");
+          if (statusElement) {
+            statusElement.textContent = status;
+            statusElement.className = status.toLowerCase(); // Will add either 'connected' or 'disconnected' class
+          }
         };
 
         /**
@@ -133,19 +187,9 @@
             if (data.event_name === "GAMESERVER_NEARBY_UPDATE") {
               updateNearbyClients(data.payload.nearby_clients);
             }
-            logMessage(data);
           } catch (error) {
             console.error("Error parsing WebSocket message:", error);
           }
-        };
-
-        /**
-         * Update the status display.
-         * @param {string} status - The status text.
-         */
-        const updateStatus = (status) => {
-          const statusDiv = document.getElementById("status");
-          statusDiv.textContent = status;
         };
 
         /**
@@ -180,11 +224,30 @@
          * @param {Array} clients - List of nearby clients.
          */
         const updateNearbyClients = (clients) => {
-          console.log("Updating nearby clients:", clients); // Debug incoming data
+          // console.log("Updating nearby clients:", clients); // Debug incoming data
 
           const currentClientIds = new Set(
             clients.map((client) => client.client_id),
           );
+
+          // Update client list
+          const clientList = document.getElementById("clientList");
+          clientList.innerHTML = clients
+            .map((client) => {
+              const { name, latitude, longitude, altitude, direction } = client;
+              return `
+                <div class="client-item">
+                  <div class="client-name">${name || "Unknown"}</div>
+                  <div class="client-details">
+                    Lat: ${latitude?.toFixed(4) || "N/A"}<br>
+                    Lng: ${longitude?.toFixed(4) || "N/A"}<br>
+                    Alt: ${altitude || "N/A"}m<br>
+                    Dir: ${direction?.toFixed(1) || "N/A"}°
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
 
           // Remove markers that are no longer in the nearby clients list
           Object.keys(markers).forEach((clientId) => {
@@ -202,10 +265,8 @@
               if (markers[client_id]) {
                 // Existing marker - animate to new position and rotation
                 const marker = markers[client_id];
-
-                // Animate position
                 marker.slideTo([latitude, longitude], {
-                  duration: 100,
+                  duration: SLIDE_DURATION,
                   keepAtCenter: false,
                 });
 
@@ -214,7 +275,6 @@
                   .getElement()
                   ?.querySelector(".arrow-marker");
                 if (element) {
-                  // Don't try to animate, just set the new rotation directly
                   element.style.transform = `rotate(${direction - 90}deg)`;
                 }
 
@@ -240,51 +300,13 @@
         };
 
         /**
-         * Log messages to the log div.
-         * @param {Object} data - The data object from WebSocket.
-         */
-        const logMessage = (data) => {
-          const logDiv = document.getElementById("log");
-
-          if (data.payload?.nearby_clients) {
-            data.payload.nearby_clients.forEach((client) => {
-              const {
-                name = "Unknown",
-                latitude = "Unknown",
-                longitude = "Unknown",
-                direction = "Unknown",
-              } = client;
-              const message = `Client: ${name}, Position: (${latitude}, ${longitude}), Direction: ${direction}°`;
-              const logEntry = document.createElement("div");
-              logEntry.textContent = message;
-              logDiv.appendChild(logEntry);
-            });
-            logDiv.scrollTop = logDiv.scrollHeight;
-          }
-        };
-
-        /**
          * Initialize event listeners.
          */
         const initEventListeners = () => {
-          const setNameButton = document.getElementById("setNameButton");
-          setNameButton.addEventListener("click", setName);
-
-          const directionSlider = document.getElementById("directionSlider");
-          const directionValue = document.getElementById("directionValue");
-
-          directionSlider.addEventListener("input", (e) => {
-            currentDirection = parseInt(e.target.value);
-            directionValue.textContent = `${currentDirection}°`;
-            if (myMarker) {
-              const currentLatLng = myMarker.getLatLng();
-
-              myMarker.remove();
-              myMarker = createArrowMarker(
-                [currentLatLng.lat, currentLatLng.lng],
-                currentDirection,
-                true,
-              ).addTo(map);
+          const nameInput = document.getElementById("nameInput");
+          nameInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              setName();
             }
           });
         };
@@ -348,25 +370,26 @@
                 lat,
                 lng,
               );
-              // Update the direction slider
-              const directionSlider =
-                document.getElementById("directionSlider");
-              const directionValue = document.getElementById("directionValue");
-              directionSlider.value = currentDirection;
-              directionValue.textContent = `${Math.round(currentDirection)}°`;
+
+              // Update marker position and rotation
+              myMarker.setLatLng([lat, lng]);
+              const element = myMarker
+                .getElement()
+                ?.querySelector(".arrow-marker");
+              if (element) {
+                element.style.transform = `rotate(${currentDirection - 90}deg)`;
+              }
             }
+          } else {
+            // Create new marker only if it doesn't exist
+            myMarker = createArrowMarker(
+              [lat, lng],
+              currentDirection,
+              true,
+            ).addTo(map);
           }
 
-          if (myMarker) {
-            myMarker.remove(); // Remove old marker
-          }
-          // Create new marker with updated direction
-          myMarker = createArrowMarker(
-            [lat, lng],
-            currentDirection,
-            true,
-          ).addTo(map);
-
+          // Update or create circle
           if (myCircle) {
             myCircle.setLatLng([lat, lng]);
           } else {
