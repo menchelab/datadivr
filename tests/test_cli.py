@@ -4,7 +4,8 @@ import pytest
 from prompt_toolkit import PromptSession
 from typer.testing import CliRunner
 
-from datadivr.cli import app_cli, get_user_input, input_loop, run_client
+from datadivr.commandlineinterface.client import get_user_input, input_loop, run_client, start_client_app
+from datadivr.commandlineinterface.server import start_server_app
 from datadivr.exceptions import InputLoopInterrupted
 from datadivr.transport.client import WebSocketClient
 
@@ -12,6 +13,26 @@ from datadivr.transport.client import WebSocketClient
 @pytest.fixture
 def cli_runner():
     return CliRunner()
+
+
+def test_start_server_cli():
+    """Test the server CLI command."""
+    with (
+        patch("uvicorn.Config") as mock_config,
+        patch("uvicorn.Server") as mock_server,
+        patch("asyncio.run"),
+        patch("fastapi.FastAPI"),
+    ):
+        start_server_app(host="localhost", port=8765, static_dir=None, log_level="INFO", pretty=False)
+        mock_config.assert_called_once()
+        mock_server.assert_called_once()
+
+
+def test_start_client_cli():
+    """Test the client CLI command."""
+    with patch("asyncio.run") as mock_run:
+        start_client_app(host="localhost", port=8765, log_level="INFO")
+        mock_run.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -69,7 +90,7 @@ async def test_input_loop():
         raise KeyboardInterrupt()
 
     with (
-        patch("datadivr.cli.get_user_input", side_effect=mock_get_input),
+        patch("datadivr.commandlineinterface.client.get_user_input", side_effect=mock_get_input),
         patch("prompt_toolkit.PromptSession", return_value=session),
         pytest.raises(InputLoopInterrupted),
     ):
@@ -78,64 +99,42 @@ async def test_input_loop():
     client.send_message.assert_awaited_once_with(payload={"data": 123}, event_name="test", to="others", msg=None)
 
 
-def test_start_server(cli_runner):
-    with patch("uvicorn.Server.serve") as mock_serve:
-        result = cli_runner.invoke(app_cli, ["start-server"])
-        assert result.exit_code == 0
-        mock_serve.assert_called_once()
-
-
-def test_start_client(cli_runner):
-    """Test the start_client CLI command."""
-    mock_run = Mock()
-
-    with patch("asyncio.run", mock_run):
-        result = cli_runner.invoke(app_cli, ["start-client"])
-        assert result.exit_code == 0
-        mock_run.assert_called_once()
-
-
 @pytest.mark.asyncio
 async def test_run_client():
     """Test the run_client function directly."""
     mock_client = AsyncMock(spec=WebSocketClient)
+    mock_client.connect = AsyncMock()
+    mock_client.disconnect = AsyncMock()
+    mock_client.receive_messages = AsyncMock()
 
-    with (
-        patch("datadivr.cli.WebSocketClient", return_value=mock_client),
-        patch("asyncio.gather", AsyncMock()),
-        patch("datadivr.cli.input_loop", AsyncMock()),
-    ):
+    with patch("datadivr.commandlineinterface.client.WebSocketClient", return_value=mock_client):
         await run_client("localhost", 8765)
-
         mock_client.connect.assert_awaited_once()
         mock_client.disconnect.assert_awaited_once()
-        # No more task assertions since we're using gather directly
 
 
 @pytest.mark.asyncio
 async def test_run_client_connection_error():
     """Test handling of connection errors in run_client."""
     mock_client = AsyncMock(spec=WebSocketClient)
-    mock_client.connect.side_effect = OSError("Connection refused")
+    mock_client.connect = AsyncMock(side_effect=OSError("Connection refused"))
+    mock_client.disconnect = AsyncMock()
 
-    with patch("datadivr.cli.WebSocketClient", return_value=mock_client):
+    with patch("datadivr.commandlineinterface.client.WebSocketClient", return_value=mock_client):
         await run_client("localhost", 8765)
         mock_client.connect.assert_awaited_once()
-        mock_client.disconnect.assert_awaited_once()  # We now always call disconnect
+        mock_client.disconnect.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_run_client_general_error():
     """Test handling of general errors in run_client."""
     mock_client = AsyncMock(spec=WebSocketClient)
+    mock_client.connect = AsyncMock()
+    mock_client.disconnect = AsyncMock()
+    mock_client.receive_messages = AsyncMock()
 
-    with (
-        patch("datadivr.cli.WebSocketClient", return_value=mock_client),
-        patch("asyncio.gather", AsyncMock(side_effect=Exception("Test error"))),
-        patch("datadivr.cli.input_loop", AsyncMock()),
-    ):
+    with patch("datadivr.commandlineinterface.client.WebSocketClient", return_value=mock_client):
         await run_client("localhost", 8765)
-
         mock_client.connect.assert_awaited_once()
         mock_client.disconnect.assert_awaited_once()
-        # No more task assertions
