@@ -1,6 +1,6 @@
 """Client-side WebSocket event handlers."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from rich.console import Console
 
@@ -17,7 +17,11 @@ async def handle_info_update(message: WebSocketMessage) -> Optional[WebSocketMes
     Args:
         message: WebSocket message containing client information
     """
-    payload = message.payload
+    if not isinstance(message.payload, dict):
+        console.print("[bold red]Error:[/bold red] Invalid payload format")
+        return None
+
+    payload: dict[str, Any] = message.payload
 
     # Print information about the update
     console.print(

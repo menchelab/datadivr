@@ -5,8 +5,10 @@ from datadivr.handlers.registry import HandlerType, websocket_handler
 from datadivr.transport.messages import create_message, send_message
 from datadivr.transport.models import WebSocketMessage
 from datadivr.transport.server import clients, get_client_state, update_client_state
-from datadivr.utils.logging import get_logger
+from datadivr.utils.logging import get_logger, setup_logging
 
+# Initialize logging first, before getting the logger
+setup_logging()
 logger = get_logger(__name__)
 
 
@@ -72,9 +74,6 @@ async def info_update_handler(message: WebSocketMessage) -> None:
     """
     try:
         data = message.payload
-        if not isinstance(data, dict):
-            logger.error("Invalid payload format")
-            return
 
         lat = data.get("latitude")
         lon = data.get("longitude")
@@ -98,27 +97,60 @@ async def info_update_handler(message: WebSocketMessage) -> None:
         logger.exception("Error handling INFO_UPDATE", error=str(e))
 
 
-@BackgroundTasks.periodic(interval=1.0, name="GAMESERVER_broadcast_client_updates")
+@BackgroundTasks.periodic(interval=0.1, name="GAMESERVER_broadcast_client_updates")
 async def broadcast_updates() -> None:
+    """
+    Periodically broadcast updates about nearby clients to each connected client.
+
+    This function runs every second and performs the following steps for each client:
+    1. Gets the client's current position
+    2. Finds all other clients within the specified range
+    3. Sends a GAMESERVER_NEARBY_UPDATE message containing information about nearby clients
+
+    The message format sent to each client is:
+    {
+        "event_name": "GAMESERVER_NEARBY_UPDATE",
+        "payload": {
+            "nearby_clients": [
+                {
+                    "client_id": "uuid",
+                    "name": "Client Name",
+                    "latitude": float,
+                    "longitude": float,
+                    "altitude": float,
+                    "direction": float
+                },
+                ...
+            ]
+        }
+    }
+    """
     logger.debug("Starting broadcast cycle")
 
+    # Iterate through all connected clients
     for client_id, client_data in clients.items():
         state = client_data["state"]
+        # Get current client's position
         lat1, lon1 = state.get("latitude", 0), state.get("longitude", 0)
+        # Skip clients without valid position data
         if lat1 == 0 and lon1 == 0:
             continue
 
         nearby_clients = []
 
+        # Check distance to all other clients
         for other_id, other_data in clients.items():
+            # Skip self
             if client_id == other_id:
                 continue
 
             other_state = other_data["state"]
             lat2, lon2 = other_state.get("latitude", 0), other_state.get("longitude", 0)
+            # Skip clients without valid position data
             if lat2 == 0 and lon2 == 0:
                 continue
 
+            # If client is within range, add their info to the nearby list
             if is_within_range(lat1, lon1, lat2, lon2):
                 nearby_clients.append({
                     "client_id": other_id,
@@ -129,11 +161,15 @@ async def broadcast_updates() -> None:
                     "direction": other_state.get("direction"),
                 })
 
-        if nearby_clients:
-            message = create_message(
-                event_name="GAMESERVER_NEARBY_UPDATE", payload={"nearby_clients": nearby_clients}, to=client_id
-            )
-            await send_message(client_data["websocket"], message)
+        # also send if no nearby clients, to potentially clean old clients, could be improved:
+        # TODO: check if last update was already empty for this client, if so, skip
+
+        # if nearby_clients: # only send if there are nearby clients
+
+        message = create_message(
+            event_name="GAMESERVER_NEARBY_UPDATE", payload={"nearby_clients": nearby_clients}, to=client_id
+        )
+        await send_message(client_data["websocket"], message)
 
 
 @websocket_handler("GAMESERVER_SET_NAME", HandlerType.SERVER)

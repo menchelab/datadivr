@@ -106,7 +106,7 @@ def remove_client(client_id: str) -> None:
         logger.info("client_disconnected", client_id=client_id)
 
 
-def update_client_state(client_id: str, **kwargs) -> None:
+def update_client_state(client_id: str, **kwargs: Any) -> None:
     """Update the state information for a client."""
     if client_id in clients:
         clients[client_id]["state"].update(kwargs)
@@ -146,10 +146,14 @@ async def broadcast(message: WebSocketMessage, sender: WebSocket) -> None:
 
     for websocket in targets:
         try:
+            # Find client_id for this websocket
+            client_id = next(cid for cid, data in clients.items() if data["websocket"] == websocket)
             await websocket.send_json(message_data)
-            logger.debug("message_sent", client_id=clients[websocket]["id"])
+            logger.debug("message_sent", client_id=client_id)
         except Exception as e:
-            logger.exception("broadcast_error", error=str(e), client_id=clients[websocket]["id"])
+            # Find client_id for this websocket
+            client_id = next(cid for cid, data in clients.items() if data["websocket"] == websocket)
+            logger.exception("broadcast_error", error=str(e), client_id=client_id)
 
 
 async def close_client_connection(client_id: str) -> None:

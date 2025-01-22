@@ -1,0 +1,91 @@
+<!--
+    Simple WebSocket game client that connects to datadivr gameserver example server.
+    This client automatically:
+    - Connects to a WebSocket server
+    - Sets a player name
+    - Sets a fixed location in Vienna
+    - Displays connection status and received messages
+    - Auto-reconnects on disconnection
+-->
+<!doctype html>
+<html>
+  <head>
+    <title>Simple Game Client</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+      }
+      #status,
+      #lastMessage {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="status">Disconnected</div>
+    <div id="lastMessage">No messages yet</div>
+
+    <script>
+      (() => {
+        const VIENNA_COORDS = { lat: 48.2, lng: 16 };
+        const WS_URL = "ws://jetskeee.com:8765/ws";
+        let ws = null;
+
+        const WSClient = {
+          connect() {
+            ws = new WebSocket(WS_URL);
+            ws.onopen = () => {
+              document.getElementById("status").textContent = "Connected";
+
+              // Set name
+              this.send({
+                event_name: "GAMESERVER_SET_NAME",
+                to: "others",
+                payload: { name: "Olaf Lolson" },
+              });
+
+              // Set location
+              this.send({
+                event_name: "GAMESERVER_INFO_UPDATE",
+                to: "others",
+                payload: {
+                  latitude: VIENNA_COORDS.lat,
+                  longitude: VIENNA_COORDS.lng,
+                  altitude: 500,
+                  direction: 90,
+                },
+              });
+            };
+
+            ws.onclose = () => {
+              document.getElementById("status").textContent = "Disconnected";
+              setTimeout(this.connect.bind(this), 5000);
+            };
+
+            ws.onmessage = (event) => {
+              try {
+                const data = JSON.parse(event.data);
+                document.getElementById(
+                  "lastMessage",
+                ).innerHTML = `<pre>${JSON.stringify(data, null, 4)}</pre>`;
+              } catch (error) {
+                console.error("Error parsing message:", error);
+              }
+            };
+          },
+
+          send(message) {
+            if (ws?.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify(message));
+            }
+          },
+        };
+
+        window.onload = () => WSClient.connect();
+      })();
+    </script>
+  </body>
+</html>
