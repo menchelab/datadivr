@@ -44,7 +44,7 @@
               this.send({
                 event_name: "GAMESERVER_CLIENT_SETNAME",
                 to: "others",
-                payload: { name: "Olaf Lolson" },
+                payload: { name: "simple_client.html" },
               });
 
               // Set location
@@ -72,6 +72,7 @@
             ws.onmessage = (event) => {
               try {
                 const data = JSON.parse(event.data);
+                console.log("Received JSON:", data);
                 document.getElementById(
                   "lastMessage",
                 ).innerHTML = `<pre>${JSON.stringify(data, null, 4)}</pre>`;
