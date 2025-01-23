@@ -24,19 +24,12 @@ def client():
 @pytest.mark.asyncio
 async def test_connect(client, mock_websocket):
     mock_connect = AsyncMock(return_value=mock_websocket)
-    mock_websocket.send = AsyncMock()  # Mock the send method
+    mock_websocket.send = AsyncMock()
 
-    # Mock send_handler_names correctly as an AsyncMock
-    with (
-        patch.object(client, "send_handler_names", AsyncMock()) as mock_send_handlers,
-        patch("websockets.connect", mock_connect),
-    ):
+    with patch("websockets.connect", mock_connect):
         await client.connect()
         assert client.websocket == mock_websocket
-        # Verify that connect was called with the correct URI
         mock_connect.assert_called_once_with(client.uri)
-        # Verify that handler names were sent
-        mock_send_handlers.assert_called_once()
 
 
 @pytest.mark.asyncio

@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 import numpy as np
 from PIL import Image
@@ -10,7 +9,7 @@ logger = get_logger(__name__)
 
 
 def create_textures_from_project(
-    project_name: str, layouts_data: dict, links_data: Optional[dict], output_dir: str = "static/projects/"
+    project_name: str, layouts_data: dict, links_data: dict | None, output_dir: str = "static/projects/"
 ) -> None:
     """Create RGB textures from a Project instance and save them to a specified directory."""
     project_output_dir = os.path.join(output_dir, project_name, "textures")

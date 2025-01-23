@@ -8,7 +8,7 @@ logger = get_logger(__name__)
 
 def create_nodes_json(nodelist: list, node_names: list, project: str, prefix_path: str = "static/projects/") -> None:
     # Create a list of nodes with the required structure
-    nodes = [{"id": int(idx), "n": name, "attrlist": []} for idx, name in zip(nodelist, node_names)]
+    nodes = [{"id": int(idx), "n": name, "attrlist": []} for idx, name in zip(nodelist, node_names, strict=False)]
 
     # Create the final structure
     data = {"nodes": nodes}

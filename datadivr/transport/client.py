@@ -20,7 +20,7 @@ Example:
 """
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 import websockets
 from websockets import WebSocketClientProtocol
@@ -59,13 +59,20 @@ class WebSocketClient:
         """
         self.uri = uri
         self.handlers = get_handlers(HandlerType.CLIENT)
-        self.websocket: Optional[WebSocketClientProtocol] = None
+        self.websocket: WebSocketClientProtocol | None = None
         self.logger = get_logger(__name__)
 
     async def connect(self) -> None:
         """Connect to the WebSocket server and send initial handler information."""
-        self.websocket = await websockets.connect(self.uri)
-        await self.send_handler_names()
+        try:
+            self.websocket = await websockets.connect(self.uri)
+            # await self.send_handler_names()
+        except ConnectionRefusedError as e:
+            self.logger.exception("connection_refused", error=str(e))
+            raise
+        except Exception as e:
+            self.logger.exception("unexpected_error_during_connection", error=str(e))
+            raise
 
     async def receive_messages(self) -> None:
         """Listen for incoming messages from the server."""
@@ -74,8 +81,9 @@ class WebSocketClient:
 
         try:
             async for message in self.websocket:
+                self.logger.info("raw_message_received", raw_message=message)
                 event_data = json.loads(message)
-                self.logger.debug("message_received", event_data=event_data)
+                self.logger.info("message_received", event_data=event_data)
                 await self.handle_event(event_data, self.websocket)
         except websockets.exceptions.ConnectionClosed:
             self.logger.info("connection_closed")
@@ -102,7 +110,7 @@ class WebSocketClient:
                 "no_handler_for_event", event_name=event_name, event_data=json.dumps(event_data, indent=2)
             )
 
-    async def send_message(self, payload: Any, event_name: str, msg: Optional[str] = None, to: str = "others") -> None:
+    async def send_message(self, payload: Any, event_name: str, msg: str | None = None, to: str = "others") -> None:
         """Send a message to the server.
 
         Args:

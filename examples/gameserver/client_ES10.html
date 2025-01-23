@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Game Client</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+    />
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+      }
+      #map {
+        height: 100vh;
+        width: 100%;
+      }
+      .controls {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+
+        background: rgba(255, 255, 255, 0.7);
+        padding: 10px;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        min-width: 200px;
+      }
+      #nameInput {
+        padding: 5px;
+        margin-right: 10px;
+      }
+      #status {
+        margin-top: 5px;
+        font-size: 0.9em;
+      }
+
+      #status.connected {
+        color: #2ecc71;
+      }
+
+      #status.disconnected {
+        color: #e74c3c;
+      }
+      .arrow-marker {
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform-origin: center center;
+      }
+      .client-list {
+        margin-top: 10px;
+        font-size: 0.9em;
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+      .client-item {
+        border-bottom: 1px solid #eee;
+        padding: 5px 0;
+      }
+      .client-item:last-child {
+        border-bottom: none;
+      }
+      .client-name {
+        font-weight: bold;
+      }
+      .client-details {
+        color: #666;
+        font-family: monospace;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls">
+      <input type="text" id="nameInput" placeholder="Enter your name" />
+      <div id="status">Disconnected</div>
+      <div class="client-list" id="clientList"></div>
+    </div>
+
+    <div id="map"></div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      crossorigin=""
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.marker.slideto@0.2.0/Leaflet.Marker.SlideTo.js"></script>
+    <script>
+      (() => {
+        // Constants
+        const CONFIG = {
+          WS_URL: "ws://localhost:8765/ws",
+          MAP: {
+            DEFAULT_VIEW: [48.2082, 16.3738],
+            DEFAULT_ZOOM: 13,
+            CIRCLE_RADIUS: 100000, // 100 km
+            SLIDE_DURATION: 200, // ms for position update animation
+          },
+        };
+
+        // State
+        const state = {
+          ws: null,
+          map: null,
+          myMarker: null,
+          myCircle: null,
+          markers: {},
+          rot_z: 90,
+        };
+
+        // WebSocket handlers
+        const WSClient = {
+          connect() {
+            state.ws = new window.WebSocket(CONFIG.WS_URL);
+            state.ws.onopen = () => UI.updateStatus("Connected");
+            state.ws.onclose = () => {
+              UI.updateStatus("Disconnected");
+              // Reset state of other clients, we can keep our own state
+              state.markers = {};
+              setTimeout(WSClient.connect, 5000);
+            };
+            state.ws.onmessage = this.handleMessage;
+          },
+
+          handleMessage(event) {
+            try {
+              const data = JSON.parse(event.data);
+              if (data.event_name === "GAMESERVER_NEARBY_UPDATE") {
+                Markers.updateNearbyClients(data.payload.nearby_clients);
+              }
+            } catch (error) {
+              console.error("Error parsing WebSocket message:", error);
+            }
+          },
+
+          send(message) {
+            if (state.ws && state.ws.readyState === window.WebSocket.OPEN) {
+              state.ws.send(JSON.stringify(message));
+            }
+          },
+        };
+
+        // UI handlers
+        const UI = {
+          updateStatus(status) {
+            const statusElement = document.getElementById("status");
+            if (statusElement) {
+              statusElement.textContent = status;
+              statusElement.className = status.toLowerCase();
+            }
+          },
+
+          setName() {
+            const nameInput = document.getElementById("nameInput");
+            const name = nameInput.value.trim();
+            if (name) {
+              WSClient.send({
+                event_name: "GAMESERVER_CLIENT_SET_NAME",
+                to: "others",
+                payload: { name },
+              });
+            }
+          },
+
+          initEventListeners() {
+            const nameInput = document.getElementById("nameInput");
+            nameInput.addEventListener("keypress", (e) => {
+              if (e.key === "Enter") {
+                this.setName();
+              }
+            });
+          },
+        };
+
+        // Map handlers
+        const Map = {
+          init() {
+            state.map = L.map("map").setView(
+              CONFIG.MAP.DEFAULT_VIEW,
+              CONFIG.MAP.DEFAULT_ZOOM,
+            );
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+              maxZoom: 19,
+            }).addTo(state.map);
+
+            state.map.on("click", this.onClick);
+            state.map.on("mousemove", this.onMouseMove);
+          },
+
+          onClick(e) {
+            Markers.updatePosition(e.latlng);
+          },
+
+          onMouseMove(e) {
+            if (e.originalEvent.shiftKey) {
+              Markers.updatePosition(e.latlng);
+            }
+          },
+
+          calculateBearing(startLat, startLng, destLat, destLng) {
+            startLat = (startLat * Math.PI) / 180;
+            startLng = (startLng * Math.PI) / 180;
+            destLat = (destLat * Math.PI) / 180;
+            destLng = (destLng * Math.PI) / 180;
+
+            const y = Math.sin(destLng - startLng) * Math.cos(destLat);
+            const x =
+              Math.cos(startLat) * Math.sin(destLat) -
+              Math.sin(startLat) *
+                Math.cos(destLat) *
+                Math.cos(destLng - startLng);
+            let bearing = (Math.atan2(y, x) * 180) / Math.PI;
+            return (bearing + 360) % 360;
+          },
+        };
+
+        // Marker handlers
+        const Markers = {
+          createArrowMarker(latlng, direction, isMyMarker = false) {
+            const size = isMyMarker ? 40 : 20;
+            const fontSize = isMyMarker ? 40 : 20;
+            const anchor = isMyMarker ? 20 : 10;
+
+            const arrowIcon = L.divIcon({
+              html: `<div class="arrow-marker" style="transform: rotate(${
+                direction - 90
+              }deg); font-size: ${fontSize}px;">➤</div>`,
+              className: "",
+              iconSize: [size, size],
+              iconAnchor: [anchor, anchor],
+            });
+
+            return L.marker(latlng, { icon: arrowIcon });
+          },
+
+          updatePosition(latlng) {
+            const { lat, lng } = latlng;
+
+            if (state.myMarker) {
+              const prevPos = state.myMarker.getLatLng();
+              if (prevPos.lat !== lat || prevPos.lng !== lng) {
+                state.currentDirection = Map.calculateBearing(
+                  prevPos.lat,
+                  prevPos.lng,
+                  lat,
+                  lng,
+                );
+
+                state.myMarker.setLatLng([lat, lng]);
+                const element = state.myMarker.getElement();
+                if (element) {
+                  const arrowMarker = element.querySelector(".arrow-marker");
+                  if (arrowMarker) {
+                    arrowMarker.style.transform = `rotate(${
+                      state.currentDirection - 90
+                    }deg)`;
+                  }
+                }
+              }
+            } else {
+              state.myMarker = this.createArrowMarker(
+                [lat, lng],
+                state.rot_z,
+                true,
+              ).addTo(state.map);
+            }
+
+            if (state.myCircle) {
+              state.myCircle.setLatLng([lat, lng]);
+            } else {
+              state.myCircle = L.circle([lat, lng], {
+                radius: CONFIG.MAP.CIRCLE_RADIUS,
+              }).addTo(state.map);
+            }
+
+            WSClient.send({
+              event_name: "GAMESERVER_CLIENT_UPDATE_STATE",
+              to: "others",
+              payload: {
+                lat: lat,
+                long: lng,
+                alt: 500,
+                rot_x: 0.5,
+                rot_y: 0.5,
+                rot_z: state.rot_z,
+                type: 1,
+                anim: 0,
+              },
+            });
+          },
+
+          updateNearbyClients(clients) {
+            const currentClientIds = new Set(
+              clients.map((client) => client.client_id),
+            );
+
+            // Update client list UI
+            const clientList = document.getElementById("clientList");
+            clientList.innerHTML = clients
+              .map((client) => {
+                const {
+                  name,
+                  lat,
+                  long,
+                  alt,
+                  rot_x,
+                  rot_y,
+                  rot_z,
+                  type,
+                  anim,
+                } = client;
+                return `
+                  <div class="client-item">
+                    <div class="client-name">${
+                      name || "Unknown"
+                    } (${type}/${anim})</div>
+                    <div class="client-details">
+                      Lat/Lng: ${lat ? lat.toFixed(4) : "N/A"}/${
+                        long ? long.toFixed(4) : "N/A"
+                      }<br>
+                      Alt: ${alt || "N/A"}m<br>
+                      Rot: ${rot_x ? rot_x.toFixed(2) : "N/A"}°/${
+                        rot_y ? rot_y.toFixed(2) : "N/A"
+                      }°/${rot_z ? rot_z.toFixed(2) : "N/A"}°
+                    </div>
+                  </div>
+                `;
+              })
+              .join("");
+
+            // Remove old markers
+            Object.keys(state.markers).forEach((clientId) => {
+              if (!currentClientIds.has(clientId)) {
+                state.map.removeLayer(state.markers[clientId]);
+                delete state.markers[clientId];
+              }
+            });
+
+            // Update markers
+            clients.forEach((client) => {
+              const { client_id, name, lat, long, rot_z } = client;
+              if (lat && long && name) {
+                if (state.markers[client_id]) {
+                  const marker = state.markers[client_id];
+                  marker.slideTo([lat, long], {
+                    duration: CONFIG.MAP.SLIDE_DURATION,
+                    keepAtCenter: false,
+                  });
+
+                  const element = marker.getElement();
+                  if (element) {
+                    const arrowMarker = element.querySelector(".arrow-marker");
+                    if (arrowMarker) {
+                      arrowMarker.style.transform = `rotate(${rot_z - 90}deg)`;
+                    }
+                  }
+                  marker.setTooltipContent(name);
+                } else {
+                  state.markers[client_id] = this.createArrowMarker(
+                    [lat, long],
+                    rot_z,
+                  )
+                    .bindTooltip(name, {
+                      permanent: true,
+                      direction: "right",
+                      offset: [20, 0],
+                      opacity: 0.7,
+                    })
+                    .addTo(state.map);
+                }
+              }
+            });
+          },
+        };
+
+        // Initialize application
+        window.onload = () => {
+          Map.init();
+          WSClient.connect();
+          UI.initEventListeners();
+        };
+      })();
+    </script>
+  </body>
+</html>

@@ -3,6 +3,24 @@ import numpy as np
 from datadivr.handlers.registry import HandlerType, websocket_handler
 from datadivr.project.project_manager import ProjectManager
 from datadivr.transport.models import WebSocketMessage
+from datadivr.utils.logging import get_logger
+
+logger = get_logger(__name__)
+
+
+@websocket_handler("client_overview", HandlerType.CLIENT)
+async def handle_client_overview(message: WebSocketMessage) -> None:
+    """Handle client overview messages."""
+    if not message.payload:
+        return
+
+    overview = message.payload
+    logger.info(
+        "Client Overview Update: ",
+        clients=len(overview["client_ids"]),
+        ids=overview["client_ids"],
+        time=overview["timestamp"],
+    )
 
 
 @websocket_handler("get_node_info", HandlerType.SERVER)

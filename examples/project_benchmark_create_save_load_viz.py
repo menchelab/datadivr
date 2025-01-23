@@ -35,7 +35,7 @@ def main() -> None:
     # Add layouts
     t0 = time.perf_counter()
     layout_names = ["default"]
-    for name, positions, colors in zip(layout_names, data[3], data[4]):
+    for name, positions, colors in zip(layout_names, data[3], data[4], strict=False):
         project.add_layout_bulk(name, data[0], positions, colors)
     logger.debug(f"Adding layouts took {time.perf_counter() - t0:.2f}s")
 

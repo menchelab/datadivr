@@ -3,15 +3,18 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 from fastapi.websockets import WebSocket, WebSocketDisconnect
+from structlog.testing import capture_logs
 
 from datadivr.exceptions import InvalidMessageFormat
 from datadivr.transport.models import WebSocketMessage
 from datadivr.transport.server import (
+    add_client,
     app,
     broadcast,
     clients,
     handle_connection,
     handle_msg,
+    websocket_endpoint,
 )
 
 
@@ -84,8 +87,7 @@ async def test_handle_msg_unknown_event():
 @pytest.mark.asyncio
 async def test_broadcast_to_all(websocket_mock, clear_clients):
     """Test broadcasting message to all clients"""
-    clients[websocket_mock] = "test_client"
-
+    add_client(websocket_mock)
     message = WebSocketMessage(event_name="test_event", payload={"data": "test"}, to="all")
 
     await broadcast(message, websocket_mock)
@@ -95,61 +97,67 @@ async def test_broadcast_to_all(websocket_mock, clear_clients):
 @pytest.mark.asyncio
 async def test_broadcast_to_others(websocket_mock, clear_clients):
     """Test broadcasting message to others"""
-    sender = AsyncMock(spec=WebSocket)
-    receiver = websocket_mock
+    sender_socket = AsyncMock(spec=WebSocket)
+    receiver_socket = websocket_mock
 
-    clients[sender] = "sender"
-    clients[receiver] = "receiver"
+    add_client(sender_socket)
+    add_client(receiver_socket)
 
     message = WebSocketMessage(event_name="test_event", payload={"data": "test"}, to="others")
 
-    await broadcast(message, sender)
-    receiver.send_json.assert_called_once_with(message.model_dump())
-    sender.send_json.assert_not_called()
+    await broadcast(message, sender_socket)
+    receiver_socket.send_json.assert_called_once_with(message.model_dump())
+    sender_socket.send_json.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_broadcast_to_specific_client(websocket_mock, clear_clients):
     """Test broadcasting message to specific client"""
-    target_client = websocket_mock
-    other_client = AsyncMock(spec=WebSocket)
+    target_socket = websocket_mock
+    other_socket = AsyncMock(spec=WebSocket)
 
-    clients[target_client] = "target"
-    clients[other_client] = "other"
+    target_id = add_client(target_socket)
+    add_client(other_socket)
 
-    message = WebSocketMessage(event_name="test_event", payload={"data": "test"}, to="target")
+    message = WebSocketMessage(event_name="test_event", payload={"data": "test"}, to=target_id)
 
-    await broadcast(message, other_client)
-    target_client.send_json.assert_called_once_with(message.model_dump())
-    other_client.send_json.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_invalid_message_format(websocket_mock, clear_clients):
-    """Test handling invalid message format"""
-    # Set up the mock to first accept connection, then return invalid message
-    websocket_mock.receive_json.side_effect = [
-        {
-            "invalid_field": "value",  # Missing required fields
-        }
-    ]
-
-    with pytest.raises(InvalidMessageFormat):
-        await handle_connection(websocket_mock)
-
-    websocket_mock.accept.assert_called_once()
+    await broadcast(message, other_socket)
+    target_socket.send_json.assert_called_once_with(message.model_dump())
+    other_socket.send_json.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_broadcast_error_handling(websocket_mock, clear_clients):
-    """Test error handling during broadcast"""
-    clients[websocket_mock] = "test_client"
-    websocket_mock.send_json.side_effect = Exception("Test error")
+async def test_invalid_message_format():
+    """Test handling of invalid message format."""
+    mock_websocket = AsyncMock(spec=WebSocket)
+    mock_websocket.receive_json.return_value = {"invalid": "message"}
 
-    message = WebSocketMessage(event_name="test_event", payload={"data": "test"}, to="all")
+    with (
+        pytest.raises(InvalidMessageFormat),
+        capture_logs() as captured,  # Use structlog's test utility
+    ):
+        await websocket_endpoint(mock_websocket)
 
-    # Should not raise exception
-    await broadcast(message, AsyncMock(spec=WebSocket))
+    # Verify log was captured without warning
+    assert any(log["event"] == "invalid_message_format" for log in captured)
+
+
+@pytest.mark.asyncio
+async def test_broadcast_error_handling():
+    """Test error handling during broadcast."""
+    mock_websocket = AsyncMock(spec=WebSocket)
+    mock_websocket.send_json.side_effect = Exception("Test error")
+
+    add_client(mock_websocket)
+    message = WebSocketMessage(event_name="test", to="all")
+
+    with capture_logs() as captured:
+        await broadcast(message, mock_websocket)
+
+    assert any(log["event"] == "broadcast_error" for log in captured)
+
+    # Clean up
+    clients.clear()
 
 
 @pytest.mark.asyncio
@@ -157,12 +165,14 @@ async def test_multiple_clients_broadcasting(clear_clients):
     """Test broadcasting with multiple clients for 'all' and 'others' scenarios."""
     # Create 4 mock clients
     clients_mocks = [AsyncMock(spec=WebSocket) for _ in range(4)]
+    client_ids = []
 
-    # Set up each mock with basic async methods
-    for i, mock in enumerate(clients_mocks):
+    # Set up each mock with basic async methods and add to clients
+    for _, mock in enumerate(clients_mocks):
         mock.send_json = AsyncMock()
         mock.receive_json = AsyncMock()
-        clients[mock] = f"client_{i}"  # Register each client with a unique ID
+        client_id = add_client(mock)
+        client_ids.append(client_id)
 
     # Test broadcasting to 'all'
     message_to_all = WebSocketMessage(event_name="test_event", payload={"data": "test_all"}, to="all")
@@ -174,7 +184,7 @@ async def test_multiple_clients_broadcasting(clear_clients):
     message_data = message_to_all.model_dump()
     for client in clients_mocks:
         client.send_json.assert_called_once_with(message_data)
-        client.send_json.reset_mock()  # Reset for next test
+        client.send_json.reset_mock()
 
     # Test broadcasting to 'others'
     message_to_others = WebSocketMessage(event_name="test_event", payload={"data": "test_others"}, to="others")
@@ -185,7 +195,7 @@ async def test_multiple_clients_broadcasting(clear_clients):
 
     # Verify all clients except sender received the message
     message_data = message_to_others.model_dump()
-    for client in clients_mocks:
+    for _, client in enumerate(clients_mocks):
         if client == sender:
             client.send_json.assert_not_called()
         else:

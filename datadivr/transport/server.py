@@ -12,97 +12,65 @@ Example:
     ```
 """
 
-import asyncio
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
+from datadivr.core.tasks import BackgroundTasks
 from datadivr.exceptions import InvalidMessageFormat
 from datadivr.handlers.registry import HandlerType, get_handlers
 from datadivr.transport.models import WebSocketMessage
 from datadivr.utils.logging import get_logger
 
-app = FastAPI()
 logger = get_logger(__name__)
 
 # Module-level state
-clients: dict[WebSocket, str] = {}
-tasks: set[asyncio.Task] = set()  # Track all active tasks
+clients: dict[str, dict[str, Any]] = {}  # Use client_id as the key
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    # This code runs on startup
+    """Handle startup and shutdown events."""
     logger.debug("startup_initiated")
 
-    # Log registered handlers
     server_handlers = get_handlers(HandlerType.SERVER)
-    client_handlers = get_handlers(HandlerType.CLIENT)
     logger.info("registered_server_handlers", handlers=list(server_handlers.keys()))
-    logger.info("registered_client_handlers", handlers=list(client_handlers.keys()))
 
-    yield
+    await BackgroundTasks.start_all()
+    try:
+        yield
+    finally:
+        logger.debug("shutdown_initiated", num_clients=len(clients))
 
-    # This code runs on shutdown
-    logger.debug("shutdown_initiated", num_clients=len(clients), num_tasks=len(tasks))
+        for client_id in list(clients.keys()):
+            try:
+                await close_client_connection(client_id)
+                logger.debug("closed_client_connection", client_id=client_id)
+            except Exception as e:
+                logger.exception("client_close_error", error=str(e), client_id=client_id)
 
-    # Cancel all client connections
-    for websocket in list(clients.keys()):
-        try:
-            await websocket.close()
-            logger.debug("closed_client_connection", client_id=clients[websocket])
-        except Exception as e:
-            logger.exception("client_close_error", error=str(e), client_id=clients[websocket])
+        await BackgroundTasks.stop_all()
+        clients.clear()
+        logger.debug("shutdown_completed")
 
-    # Cancel all running tasks
-    for task in tasks:
-        task.cancel()
-        logger.debug("cancelled_task", task=str(task))
 
-    # Wait for all tasks to complete
-    if tasks:
-        await asyncio.gather(*tasks, return_exceptions=True)
-        logger.debug("tasks_completed")
-
-    clients.clear()
-    tasks.clear()
-    logger.debug("shutdown_completed")
+app = FastAPI(lifespan=lifespan)
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
-    """Handle incoming WebSocket connections.
-
-    This endpoint accepts WebSocket connections and manages the client session.
-
-    Args:
-        websocket: The WebSocket connection
-    """
-    # Create a task for handling the connection
-    task = asyncio.create_task(handle_connection(websocket))
-    tasks.add(task)
-    try:
-        await task
-    finally:
-        tasks.discard(task)
+    """Handle incoming WebSocket connections."""
+    await BackgroundTasks.task(name=f"ws_connection_{id(websocket)}")(handle_connection)(websocket)
 
 
+@BackgroundTasks.task()
 async def handle_connection(websocket: WebSocket) -> None:
-    """Handle a WebSocket connection lifecycle.
-
-    This function manages the entire lifecycle of a WebSocket connection,
-    including client registration, message handling, and cleanup.
-
-    Args:
-        websocket: The WebSocket connection to handle
-    """
+    """Handle a WebSocket connection lifecycle."""
     await websocket.accept()
-    client_id = str(uuid.uuid4())
-    clients[websocket] = client_id
-    logger.info("client_connected", client_id=client_id, connected_clients=len(clients))
+    client_id = add_client(websocket)
 
     try:
         while True:
@@ -111,30 +79,46 @@ async def handle_connection(websocket: WebSocket) -> None:
                 message = WebSocketMessage.model_validate(data)
                 message.from_id = client_id
                 response = await handle_msg(message)
-                if response is not None:  # Only broadcast if there's a response
+                if response is not None:
                     await broadcast(response, websocket)
             except ValueError as e:
                 logger.exception("invalid_message_format", error=str(e), client_id=client_id)
                 raise InvalidMessageFormat() from None
     except WebSocketDisconnect:
-        del clients[websocket]
-        logger.info("client_disconnected", client_id=client_id)
+        remove_client(client_id)
     except Exception as e:
         logger.exception("websocket_error", error=str(e), client_id=client_id)
         raise
 
 
-async def handle_msg(message: WebSocketMessage) -> Optional[WebSocketMessage]:
-    """Handle an incoming WebSocket message.
+def add_client(websocket: WebSocket) -> str:
+    """Add a new client and return its client ID."""
+    client_id = str(uuid.uuid4())
+    clients[client_id] = {"websocket": websocket, "state": {}}
+    logger.info("client_connected", client_id=client_id, connected_clients=len(clients))
+    return client_id
 
-    This function routes messages to appropriate handlers based on the event name.
 
-    Args:
-        message: The WebSocket message to handle
+def remove_client(client_id: str) -> None:
+    """Remove a client by its ID."""
+    if client_id in clients:
+        del clients[client_id]
+        logger.info("client_disconnected", client_id=client_id)
 
-    Returns:
-        Optional response message to be sent back
-    """
+
+def update_client_state(client_id: str, **kwargs: Any) -> None:
+    """Update the state information for a client."""
+    if client_id in clients:
+        clients[client_id]["state"].update(kwargs)
+
+
+def get_client_state(client_id: str) -> dict[str, Any] | None:
+    """Retrieve the state information for a client by client ID."""
+    return clients.get(client_id, {}).get("state")
+
+
+async def handle_msg(message: WebSocketMessage) -> WebSocketMessage | None:
+    """Handle an incoming WebSocket message."""
     logger.debug("message_received", message=message.model_dump())
 
     handlers = get_handlers(HandlerType.SERVER)
@@ -145,31 +129,34 @@ async def handle_msg(message: WebSocketMessage) -> Optional[WebSocketMessage]:
 
 
 async def broadcast(message: WebSocketMessage, sender: WebSocket) -> None:
-    """Broadcast a message to appropriate clients.
-
-    Args:
-        message: The message to broadcast
-        sender: The WebSocket connection that sent the message
-
-    The message is routed based on its 'to' field:
-    - "all": Send to all clients
-    - "others": Send to all clients except the sender
-    - specific ID: Send only to the client with that ID
-    """
+    """Broadcast a message to appropriate clients."""
     message_data = message.model_dump()
     targets: list[WebSocket] = []
 
     if message.to == "all":
-        targets = list(clients.keys())
+        targets = [data["websocket"] for data in clients.values()]
     elif message.to == "others":
-        targets = [ws for ws in clients if ws != sender]
+        targets = [data["websocket"] for cid, data in clients.items() if data["websocket"] != sender]
     else:
-        targets = [ws for ws, cid in clients.items() if cid == message.to]
+        target_data = next((data for cid, data in clients.items() if cid == message.to), None)
+        if target_data:
+            targets = [target_data["websocket"]]
 
     logger.debug("broadcasting_message", message=message_data, num_targets=len(targets))
 
     for websocket in targets:
         try:
+            # Find client_id for this websocket
+            client_id = next(cid for cid, data in clients.items() if data["websocket"] == websocket)
             await websocket.send_json(message_data)
+            logger.debug("message_sent", client_id=client_id)
         except Exception as e:
-            logger.exception("broadcast_error", error=str(e), client_id=clients[websocket])
+            # Find client_id for this websocket
+            client_id = next(cid for cid, data in clients.items() if data["websocket"] == websocket)
+            logger.exception("broadcast_error", error=str(e), client_id=client_id)
+
+
+async def close_client_connection(client_id: str) -> None:
+    """Close a client connection."""
+    if client_id in clients:
+        del clients[client_id]
