@@ -1,11 +1,11 @@
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from enum import Enum, auto
 from functools import wraps
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, TypeVar
 
 from datadivr.transport.models import WebSocketMessage
 
-T = TypeVar("T", bound=Callable[..., Awaitable[Optional[WebSocketMessage]]])
+T = TypeVar("T", bound=Callable[..., Awaitable[WebSocketMessage | None]])
 
 
 class HandlerType(Enum):
@@ -17,13 +17,13 @@ class HandlerType(Enum):
 
 
 # Separate registries for server and client handlers
-_server_handlers: dict[str, Callable[[WebSocketMessage], Awaitable[Optional[WebSocketMessage]]]] = {}
-_client_handlers: dict[str, Callable[[WebSocketMessage], Awaitable[Optional[WebSocketMessage]]]] = {}
+_server_handlers: dict[str, Callable[[WebSocketMessage], Awaitable[WebSocketMessage | None]]] = {}
+_client_handlers: dict[str, Callable[[WebSocketMessage], Awaitable[WebSocketMessage | None]]] = {}
 
 
 def get_handlers(
     handler_type: HandlerType = HandlerType.SERVER,
-) -> dict[str, Callable[[WebSocketMessage], Awaitable[Optional[WebSocketMessage]]]]:
+) -> dict[str, Callable[[WebSocketMessage], Awaitable[WebSocketMessage | None]]]:
     """
     Get registered handlers for the specified type.
 
@@ -37,9 +37,7 @@ def get_handlers(
 
 def websocket_handler(
     event_name: str, handler_type: HandlerType = HandlerType.SERVER
-) -> Callable[
-    [Callable[..., Awaitable[Optional[WebSocketMessage]]]], Callable[..., Awaitable[Optional[WebSocketMessage]]]
-]:
+) -> Callable[[Callable[..., Awaitable[WebSocketMessage | None]]], Callable[..., Awaitable[WebSocketMessage | None]]]:
     """
     Decorator to register a websocket handler function.
 
@@ -54,10 +52,10 @@ def websocket_handler(
     """
 
     def decorator(
-        func: Callable[..., Awaitable[Optional[WebSocketMessage]]],
-    ) -> Callable[..., Awaitable[Optional[WebSocketMessage]]]:
+        func: Callable[..., Awaitable[WebSocketMessage | None]],
+    ) -> Callable[..., Awaitable[WebSocketMessage | None]]:
         @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Optional[WebSocketMessage]:
+        async def wrapper(*args: Any, **kwargs: Any) -> WebSocketMessage | None:
             return await func(*args, **kwargs)
 
         if handler_type in (HandlerType.SERVER, HandlerType.BOTH):

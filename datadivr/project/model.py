@@ -2,7 +2,7 @@ import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import numpy as np
@@ -163,10 +163,10 @@ class Project(BaseModel):
     attributes: dict[str, str] = Field(default_factory=dict, description="Custom metadata key-value pairs")
 
     # Change to public names
-    nodes_data: Optional[NodeData] = None
-    links_data: Optional[LinkData] = None
+    nodes_data: NodeData | None = None
+    links_data: LinkData | None = None
     layouts_data: dict[str, LayoutData] = Field(default_factory=dict)
-    selections: Optional[list[Selection]] = []
+    selections: list[Selection] | None = []
 
     def add_nodes_bulk(self, ids: npt.NDArray[np.int32], attributes: dict[str, npt.NDArray]) -> None:
         """Efficiently add multiple nodes at once with attribute arrays
@@ -206,7 +206,7 @@ class Project(BaseModel):
         exclude_defaults: bool = False,
         exclude_none: bool = False,
         round_trip: bool = False,
-        warnings: Union[bool, str] = True,
+        warnings: bool | str = True,
         serialize_as_any: bool = False,
         context: Any = None,
     ) -> dict[str, Any]:
@@ -250,9 +250,9 @@ class Project(BaseModel):
         cls,
         obj: Any,
         *,
-        strict: Union[bool, None] = None,
-        from_attributes: Union[bool, None] = None,
-        context: Union[Any, None] = None,
+        strict: bool | None = None,
+        from_attributes: bool | None = None,
+        context: Any | None = None,
     ) -> "Project":
         """Custom deserialization from efficient storage"""
         data = obj  # obj will contain our dictionary data
@@ -293,7 +293,7 @@ class Project(BaseModel):
         return project
 
     @classmethod
-    def load_from_json_file(cls, file_path: Union[Path, str]) -> "Project":
+    def load_from_json_file(cls, file_path: Path | str) -> "Project":
         """Load a project from a JSON file.
 
         Args:
@@ -319,7 +319,7 @@ class Project(BaseModel):
             logger.exception("Failed to load project", error=str(e))
             raise
 
-    def save_to_json_file(self, file_path: Union[Path, str]) -> None:
+    def save_to_json_file(self, file_path: Path | str) -> None:
         """Save the project to a JSON file with optimized performance."""
         file_path = Path(file_path)
         logger.debug("Saving project", file_path=str(file_path))
@@ -340,7 +340,7 @@ class Project(BaseModel):
             logger.exception("Failed to save project", error=str(e))
             raise
 
-    def save_to_binary_file(self, file_path: Union[Path, str]) -> None:
+    def save_to_binary_file(self, file_path: Path | str) -> None:
         """Save the project using numpy binary format for large arrays."""
         file_path = Path(file_path)
         logger.debug("Saving project in binary format", file_path=str(file_path))
@@ -428,7 +428,7 @@ class Project(BaseModel):
                     zf.write(file_path, file_path.relative_to(temp_path))
 
     @classmethod
-    def load_from_binary_file(cls, file_path: Union[Path, str]) -> "Project":
+    def load_from_binary_file(cls, file_path: Path | str) -> "Project":
         """Load a project from a binary format file."""
         file_path = Path(file_path)
         logger.debug("Loading project from binary format", file_path=str(file_path))
@@ -526,7 +526,9 @@ class Project(BaseModel):
             )
 
         if self.links_data:
-            create_links_json(list(zip(self.links_data.start_ids, self.links_data.end_ids)), self.name, output_dir)
+            create_links_json(
+                list(zip(self.links_data.start_ids, self.links_data.end_ids, strict=False)), self.name, output_dir
+            )
 
     def create_project_summary(self, output_dir: str = "static/projects/") -> None:
         """Create a project summary JSON file."""

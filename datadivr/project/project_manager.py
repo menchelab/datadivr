@@ -1,13 +1,11 @@
-from typing import Optional
-
 from datadivr.project.model import Project
 
 
 class ProjectManager:
-    _instance: Optional[Project] = None
+    _instance: Project | None = None
 
     @classmethod
-    def get_current_project(cls) -> Optional[Project]:
+    def get_current_project(cls) -> Project | None:
         """Get the current project instance."""
         return cls._instance
 

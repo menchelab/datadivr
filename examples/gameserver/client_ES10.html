@@ -141,7 +141,7 @@
           },
 
           send(message) {
-            if (state.ws?.readyState === window.WebSocket.OPEN) {
+            if (state.ws && state.ws.readyState === window.WebSocket.OPEN) {
               state.ws.send(JSON.stringify(message));
             }
           },
@@ -254,13 +254,14 @@
                 );
 
                 state.myMarker.setLatLng([lat, lng]);
-                const element = state.myMarker
-                  .getElement()
-                  ?.querySelector(".arrow-marker");
+                const element = state.myMarker.getElement();
                 if (element) {
-                  element.style.transform = `rotate(${
-                    state.currentDirection - 90
-                  }deg)`;
+                  const arrowMarker = element.querySelector(".arrow-marker");
+                  if (arrowMarker) {
+                    arrowMarker.style.transform = `rotate(${
+                      state.currentDirection - 90
+                    }deg)`;
+                  }
                 }
               }
             } else {
@@ -321,13 +322,13 @@
                       name || "Unknown"
                     } (${type}/${anim})</div>
                     <div class="client-details">
-                      Lat/Lng: ${lat?.toFixed(4) || "N/A"}/${
-                        long?.toFixed(4) || "N/A"
+                      Lat/Lng: ${lat ? lat.toFixed(4) : "N/A"}/${
+                        long ? long.toFixed(4) : "N/A"
                       }<br>
                       Alt: ${alt || "N/A"}m<br>
-                      Rot: ${rot_x?.toFixed(2) || "N/A"}°/${
-                        rot_y?.toFixed(2) || "N/A"
-                      }°/${rot_z?.toFixed(2) || "N/A"}°
+                      Rot: ${rot_x ? rot_x.toFixed(2) : "N/A"}°/${
+                        rot_y ? rot_y.toFixed(2) : "N/A"
+                      }°/${rot_z ? rot_z.toFixed(2) : "N/A"}°
                     </div>
                   </div>
                 `;
@@ -353,11 +354,12 @@
                     keepAtCenter: false,
                   });
 
-                  const element = marker
-                    .getElement()
-                    ?.querySelector(".arrow-marker");
+                  const element = marker.getElement();
                   if (element) {
-                    element.style.transform = `rotate(${rot_z - 90}deg)`;
+                    const arrowMarker = element.querySelector(".arrow-marker");
+                    if (arrowMarker) {
+                      arrowMarker.style.transform = `rotate(${rot_z - 90}deg)`;
+                    }
                   }
                   marker.setTooltipContent(name);
                 } else {

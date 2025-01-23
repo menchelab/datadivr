@@ -1,7 +1,5 @@
 """Command-line interface for DataDivr."""
 
-from typing import Optional
-
 import typer
 
 from datadivr.commandlineinterface.client import start_client_app
@@ -14,7 +12,7 @@ app_cli = typer.Typer()
 def start_server(
     port: int = 8765,
     host: str = "127.0.0.1",
-    static_dir: Optional[str] = "./static",
+    static_dir: str | None = "./static",
     log_level: str = "INFO",
     pretty: bool = True,
 ) -> None:

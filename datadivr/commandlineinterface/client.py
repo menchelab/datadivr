@@ -9,7 +9,6 @@ from prompt_toolkit.patch_stdout import patch_stdout
 from rich.console import Console
 
 from datadivr.exceptions import InputLoopInterrupted
-from datadivr.handlers import client_handlers  # noqa: F401
 from datadivr.transport.client import WebSocketClient
 from datadivr.utils.logging import get_logger, setup_logging
 

@@ -11,7 +11,6 @@ Example:    ```python
 """
 
 from pathlib import Path
-from typing import Optional, Union
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -24,7 +23,7 @@ logger = get_logger(__name__)
 
 def add_static_routes(
     app: FastAPI,
-    static_dir: Optional[Union[str, Path]] = None,
+    static_dir: str | Path | None = None,
     static_url: str = "/static",
 ) -> None:
     """Add static file serving routes to an existing FastAPI application.

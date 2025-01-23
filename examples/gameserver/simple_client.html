@@ -31,7 +31,7 @@
     <script>
       (() => {
         const VIENNA_COORDS = { lat: 48.2, lng: 16 };
-        const WS_URL = "ws://jetskeee.com:8765/ws";
+        const WS_URL = "ws://localhost:8765/ws";
         let ws = null;
 
         const WSClient = {
@@ -42,20 +42,24 @@
 
               // Set name
               this.send({
-                event_name: "GAMESERVER_SET_NAME",
+                event_name: "GAMESERVER_CLIENT_SETNAME",
                 to: "others",
                 payload: { name: "Olaf Lolson" },
               });
 
               // Set location
               this.send({
-                event_name: "GAMESERVER_INFO_UPDATE",
+                event_name: "GAMESERVER_CLIENT_UPDATE_STATE",
                 to: "others",
                 payload: {
-                  latitude: VIENNA_COORDS.lat,
-                  longitude: VIENNA_COORDS.lng,
-                  altitude: 500,
-                  direction: 90,
+                  lat: VIENNA_COORDS.lat,
+                  long: VIENNA_COORDS.lng,
+                  alt: 500,
+                  rot_x: 0,
+                  rot_y: 0,
+                  rot_z: 0,
+                  type: 1,
+                  anim: 0,
                 },
               });
             };

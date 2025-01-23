@@ -1,7 +1,6 @@
 """Server-side CLI functionality."""
 
 import asyncio
-from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI
@@ -16,7 +15,7 @@ logger = get_logger(__name__)
 def start_server_app(
     host: str,
     port: int,
-    static_dir: Optional[str],
+    static_dir: str | None,
     log_level: str,
     pretty: bool,
 ) -> None:

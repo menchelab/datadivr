@@ -1,7 +1,7 @@
 import asyncio
-from collections.abc import Awaitable, Coroutine
+from collections.abc import Awaitable, Callable, Coroutine
 from functools import wraps
-from typing import Any, Callable, ClassVar, Optional, ParamSpec, TypeVar
+from typing import Any, ClassVar, ParamSpec, TypeVar
 
 from datadivr.utils.logging import get_logger
 
@@ -19,7 +19,7 @@ class BackgroundTasks:
 
     @classmethod
     def task(
-        cls, name: Optional[str] = None
+        cls, name: str | None = None
     ) -> Callable[[Callable[P, Coroutine[Any, Any, T]]], Callable[P, Coroutine[Any, Any, T]]]:
         """Decorator to register a one-off task."""
 
@@ -42,7 +42,7 @@ class BackgroundTasks:
 
     @classmethod
     def periodic(
-        cls, interval: float, name: Optional[str] = None
+        cls, interval: float, name: str | None = None
     ) -> Callable[[Callable[[], Coroutine[Any, Any, Any]]], Callable[[], Coroutine[Any, Any, Any]]]:
         """Decorator to register a periodic background task."""
 

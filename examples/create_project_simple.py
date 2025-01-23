@@ -14,7 +14,7 @@ def main() -> None:
 
     # Add layouts
     layout_names = ["default", "alternate1"]
-    for name, positions, colors in zip(layout_names, data[3], data[4]):
+    for name, positions, colors in zip(layout_names, data[3], data[4], strict=False):
         project.add_layout_bulk(name, data[0], positions, colors)
 
     # Test both saving methods

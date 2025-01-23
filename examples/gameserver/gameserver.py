@@ -47,7 +47,7 @@ def is_within_range(lat1: float, lon1: float, lat2: float, lon2: float, max_rang
     return distance <= max_range_km
 
 
-@websocket_handler("GAMESERVER_INFO_UPDATE", HandlerType.SERVER)
+@websocket_handler("GAMESERVER_CLIENT_UPDATE_STATE", HandlerType.SERVER)
 async def info_update_handler(message: WebSocketMessage) -> None:
     """
     Handle position updates from clients.
@@ -58,13 +58,17 @@ async def info_update_handler(message: WebSocketMessage) -> None:
 
     Example message format:
     {
-        "event_name": "INFO_UPDATE",
+        "event_name": "GAMESERVER_CLIENT_UPDATE",
         "to": "others",
         "payload": {
-            "latitude": 48.210033,
-            "longitude": 16.363449,
-            "altitude": 2345,
-            "direction": 54.6
+            "lat: 48.210033,
+            "long": 16.363449,
+            "alt": 2345,
+            "rot_x": 0.3,
+            "rot_y": 0.4,
+            "rot_z": 0.5,
+            "type": 1,
+            "anim": 2
         }
     }
 
@@ -75,12 +79,31 @@ async def info_update_handler(message: WebSocketMessage) -> None:
     try:
         data = message.payload
 
-        lat = data.get("latitude")
-        lon = data.get("longitude")
-        alt = data.get("altitude")
-        direction = data.get("direction")
+        latitude = data.get("lat")
+        longitude = data.get("long")
+        altitude = data.get("alt")
+        rotation_x = data.get("rot_x")
+        rotation_y = data.get("rot_y")
+        rotation_z = data.get("rot_z")
+        aircraft_type = data.get("type")
+        animation_state = data.get("anim")
 
-        if not all(isinstance(x, (int, float)) for x in [lat, lon, alt, direction]):
+        if not all(
+            isinstance(x, int | float)
+            for x in [latitude, longitude, altitude, rotation_x, rotation_y, rotation_z, aircraft_type, animation_state]
+        ):
+            for x in [
+                latitude,
+                longitude,
+                altitude,
+                rotation_x,
+                rotation_y,
+                rotation_z,
+                aircraft_type,
+                animation_state,
+            ]:
+                print(x, type(x))
+
             logger.error("Invalid data types in payload")
             return
 
@@ -90,14 +113,23 @@ async def info_update_handler(message: WebSocketMessage) -> None:
 
         # Update client state
         update_client_state(
-            message.from_id, name=current_name, latitude=lat, longitude=lon, altitude=alt, direction=direction
+            message.from_id,
+            name=current_name,
+            lat=latitude,
+            long=longitude,
+            alt=altitude,
+            rot_x=rotation_x,
+            rot_y=rotation_y,
+            rot_z=rotation_z,
+            type=aircraft_type,
+            anim=animation_state,
         )
         logger.debug("Updated client info", client_id=message.from_id, data=data)
     except Exception as e:
-        logger.exception("Error handling INFO_UPDATE", error=str(e))
+        logger.exception("Error handling GAMESERVER_CLIENT_UPDATE", error=str(e))
 
 
-@BackgroundTasks.periodic(interval=0.1, name="GAMESERVER_broadcast_client_updates")
+@BackgroundTasks.periodic(interval=0.2, name="GAMESERVER_broadcast_nearby_clients")
 async def broadcast_updates() -> None:
     """
     Periodically broadcast updates about nearby clients to each connected client.
@@ -115,10 +147,14 @@ async def broadcast_updates() -> None:
                 {
                     "client_id": "uuid",
                     "name": "Client Name",
-                    "latitude": float,
-                    "longitude": float,
-                    "altitude": float,
-                    "direction": float
+                    "lat": float,
+                    "long": float,
+                    "alt": float,
+                    "rot_x": float,
+                    "rot_y": float,
+                    "rot_z": float,
+                    "type": int,
+                    "anim": int
                 },
                 ...
             ]
@@ -130,8 +166,10 @@ async def broadcast_updates() -> None:
     # Iterate through all connected clients
     for client_id, client_data in clients.items():
         state = client_data["state"]
+
         # Get current client's position
-        lat1, lon1 = state.get("latitude", 0), state.get("longitude", 0)
+        lat1, lon1 = state.get("lat", 0), state.get("long", 0)
+
         # Skip clients without valid position data
         if lat1 == 0 and lon1 == 0:
             continue
@@ -145,7 +183,7 @@ async def broadcast_updates() -> None:
                 continue
 
             other_state = other_data["state"]
-            lat2, lon2 = other_state.get("latitude", 0), other_state.get("longitude", 0)
+            lat2, lon2 = other_state.get("lat", 0), other_state.get("long", 0)
             # Skip clients without valid position data
             if lat2 == 0 and lon2 == 0:
                 continue
@@ -155,10 +193,14 @@ async def broadcast_updates() -> None:
                 nearby_clients.append({
                     "client_id": other_id,
                     "name": other_state.get("name"),
-                    "latitude": lat2,
-                    "longitude": lon2,
-                    "altitude": other_state.get("altitude"),
-                    "direction": other_state.get("direction"),
+                    "lat": lat2,
+                    "long": lon2,
+                    "alt": other_state.get("alt"),
+                    "rot_x": other_state.get("rot_x"),
+                    "rot_y": other_state.get("rot_y"),
+                    "rot_z": other_state.get("rot_z"),
+                    "type": other_state.get("type"),
+                    "anim": other_state.get("anim"),
                 })
 
         # also send if no nearby clients, to potentially clean old clients, could be improved:
@@ -172,10 +214,10 @@ async def broadcast_updates() -> None:
         await send_message(client_data["websocket"], message)
 
 
-@websocket_handler("GAMESERVER_SET_NAME", HandlerType.SERVER)
+@websocket_handler("GAMESERVER_CLIENT_SETNAME", HandlerType.SERVER)
 async def set_name_handler(message: WebSocketMessage) -> None:
     """
-    Handle the SET_NAME event from clients.
+    Handle the GAMESERVER_CLIENT_SETNAME event from clients.
 
     This handler allows clients to update their display name on the server.
     It processes incoming WebSocket messages containing the new name and
@@ -183,7 +225,7 @@ async def set_name_handler(message: WebSocketMessage) -> None:
 
     Example message format:
     {
-        "event_name": "SET_NAME",
+        "event_name": "GAMESERVER_CLIENT_SETNAME",
         "to": "others",
         "payload": {
             "name": "Timmey"
@@ -211,7 +253,7 @@ async def set_name_handler(message: WebSocketMessage) -> None:
         update_client_state(message.from_id, **new_state)
         logger.debug("Updated client name", client_id=message.from_id, name=name)
     except Exception as e:
-        logger.exception("Error handling SET_NAME", error=str(e))
+        logger.exception("Error handling GAMESERVER_CLIENT_SETNAME", error=str(e))
 
 
 if __name__ == "__main__":

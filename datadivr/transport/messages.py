@@ -1,5 +1,5 @@
 import json
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import WebSocket
 
@@ -27,13 +27,13 @@ async def send_message(websocket: Any, message: WebSocketMessage) -> None:
         raise UnsupportedWebSocketTypeError()
 
 
-def create_error_message(error_msg: str, to: str, websocket: Optional[WebSocket] = None) -> WebSocketMessage:
+def create_error_message(error_msg: str, to: str, websocket: WebSocket | None = None) -> WebSocketMessage:
     """Create a standardized error message."""
     return WebSocketMessage(event_name="error", message=error_msg, to=to, websocket=websocket)
 
 
 def create_message(
-    event_name: str, payload: Any, to: str, message: Optional[str] = None, websocket: Optional[WebSocket] = None
+    event_name: str, payload: Any, to: str, message: str | None = None, websocket: WebSocket | None = None
 ) -> WebSocketMessage:
     """Create a standardized WebSocket message."""
     return WebSocketMessage(event_name=event_name, payload=payload, to=to, message=message, websocket=websocket)

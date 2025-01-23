@@ -3,7 +3,7 @@
 
 import asyncio
 import json
-from typing import Any, Optional
+from typing import Any
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
@@ -26,12 +26,12 @@ console = Console()
 
 
 # some custom handlers
-def handle_sum_result(message: Message) -> Optional[Message]:
+def handle_sum_result(message: Message) -> Message | None:
     print(f"*** handle_sum_result(): {message.from_id}: '{message.payload}'")
     return None
 
 
-def msg_handler(message: Message) -> Optional[Message]:
+def msg_handler(message: Message) -> Message | None:
     print(f">> {message.from_id}({message.event_name}): '{message.message}'")
     return None
 

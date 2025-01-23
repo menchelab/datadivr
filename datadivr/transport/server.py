@@ -15,7 +15,7 @@ Example:
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
@@ -112,12 +112,12 @@ def update_client_state(client_id: str, **kwargs: Any) -> None:
         clients[client_id]["state"].update(kwargs)
 
 
-def get_client_state(client_id: str) -> Optional[dict[str, Any]]:
+def get_client_state(client_id: str) -> dict[str, Any] | None:
     """Retrieve the state information for a client by client ID."""
     return clients.get(client_id, {}).get("state")
 
 
-async def handle_msg(message: WebSocketMessage) -> Optional[WebSocketMessage]:
+async def handle_msg(message: WebSocketMessage) -> WebSocketMessage | None:
     """Handle an incoming WebSocket message."""
     logger.debug("message_received", message=message.model_dump())
 

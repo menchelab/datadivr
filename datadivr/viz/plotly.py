@@ -43,7 +43,7 @@ def visualize_project(project: Project, layout_name: str = "default", zoom_scale
 
     # Create hover text
     hover_text = []
-    for i, (node_id, pos) in enumerate(zip(node_ids, positions)):
+    for i, (node_id, pos) in enumerate(zip(node_ids, positions, strict=False)):
         # Start with basic info
         text = [
             f"Node ID: {node_id}",
@@ -59,7 +59,7 @@ def visualize_project(project: Project, layout_name: str = "default", zoom_scale
             for attr_name in project.nodes_data.attribute_names:
                 attr_value = project.nodes_data.get_attribute(attr_name)[i]
                 # Format float values to 2 decimal places
-                if isinstance(attr_value, (float, np.floating)):
+                if isinstance(attr_value, float | np.floating):
                     text.append(f"{attr_name}: {attr_value:.2f}")
                 else:
                     text.append(f"{attr_name}: {attr_value}")

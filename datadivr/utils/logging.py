@@ -1,8 +1,8 @@
 import logging
 import os
 import sys
-from collections.abc import Mapping, MutableMapping
-from typing import Any, Callable, Optional, Union
+from collections.abc import Callable, Mapping, MutableMapping
+from typing import Any
 
 import structlog
 
@@ -14,9 +14,9 @@ class InvalidLogLevelError(ValueError):
 
 
 def setup_logging(
-    level: Optional[str] = None,
-    pretty: Optional[bool] = None,
-    log_file: Optional[str] = None,
+    level: str | None = None,
+    pretty: bool | None = None,
+    log_file: str | None = None,
 ) -> None:
     """Configure logging for the entire application."""
     # Get settings from environment with fallbacks
@@ -34,7 +34,7 @@ def setup_logging(
 
     # Configure processors
     processors: list[
-        Callable[[Any, str, MutableMapping[str, Any]], Union[Mapping[str, Any], str, bytes, bytearray, tuple[Any, ...]]]
+        Callable[[Any, str, MutableMapping[str, Any]], Mapping[str, Any] | str | bytes | bytearray | tuple[Any, ...]]
     ] = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.filter_by_level,

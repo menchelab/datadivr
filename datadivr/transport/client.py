@@ -20,7 +20,7 @@ Example:
 """
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 import websockets
 from websockets import WebSocketClientProtocol
@@ -59,7 +59,7 @@ class WebSocketClient:
         """
         self.uri = uri
         self.handlers = get_handlers(HandlerType.CLIENT)
-        self.websocket: Optional[WebSocketClientProtocol] = None
+        self.websocket: WebSocketClientProtocol | None = None
         self.logger = get_logger(__name__)
 
     async def connect(self) -> None:
@@ -110,7 +110,7 @@ class WebSocketClient:
                 "no_handler_for_event", event_name=event_name, event_data=json.dumps(event_data, indent=2)
             )
 
-    async def send_message(self, payload: Any, event_name: str, msg: Optional[str] = None, to: str = "others") -> None:
+    async def send_message(self, payload: Any, event_name: str, msg: str | None = None, to: str = "others") -> None:
         """Send a message to the server.
 
         Args:

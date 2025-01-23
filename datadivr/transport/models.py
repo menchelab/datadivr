@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import WebSocket
 from pydantic import BaseModel, ConfigDict, Field
@@ -32,11 +32,11 @@ class WebSocketMessage(BaseModel):
     """
 
     event_name: str
-    payload: Optional[Any] = None
+    payload: Any | None = None
     to: str = Field(default="others")
     from_id: str = Field(default="server")
-    message: Optional[str] = None
-    websocket: Optional[WebSocket] = Field(default=None, exclude=True)
+    message: str | None = None
+    websocket: WebSocket | None = Field(default=None, exclude=True)
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,  # Allow WebSocket type
