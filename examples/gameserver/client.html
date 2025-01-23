@@ -1,3 +1,7 @@
+<!--
+    Must be ES10 compatible because old chromium in unreal.
+    eg. no use of optional chaining, etc
+-->
 <!doctype html>
 <html lang="en">
   <head>
@@ -141,7 +145,7 @@
           },
 
           send(message) {
-            if (state.ws?.readyState === window.WebSocket.OPEN) {
+            if (state.ws && state.ws.readyState === window.WebSocket.OPEN) {
               state.ws.send(JSON.stringify(message));
             }
           },
@@ -223,14 +227,14 @@
 
         // Marker handlers
         const Markers = {
-          createArrowMarker(latlng, direction, isMyMarker = false) {
+          createArrowMarker(latlng, rot_z, isMyMarker = false) {
             const size = isMyMarker ? 40 : 20;
             const fontSize = isMyMarker ? 40 : 20;
             const anchor = isMyMarker ? 20 : 10;
 
             const arrowIcon = L.divIcon({
               html: `<div class="arrow-marker" style="transform: rotate(${
-                direction - 90
+                rot_z - 90
               }deg); font-size: ${fontSize}px;">➤</div>`,
               className: "",
               iconSize: [size, size],
@@ -246,7 +250,7 @@
             if (state.myMarker) {
               const prevPos = state.myMarker.getLatLng();
               if (prevPos.lat !== lat || prevPos.lng !== lng) {
-                state.currentDirection = Map.calculateBearing(
+                state.rot_z = Map.calculateBearing(
                   prevPos.lat,
                   prevPos.lng,
                   lat,
@@ -254,13 +258,14 @@
                 );
 
                 state.myMarker.setLatLng([lat, lng]);
-                const element = state.myMarker
-                  .getElement()
-                  ?.querySelector(".arrow-marker");
+                const element = state.myMarker.getElement();
                 if (element) {
-                  element.style.transform = `rotate(${
-                    state.currentDirection - 90
-                  }deg)`;
+                  const arrowMarker = element.querySelector(".arrow-marker");
+                  if (arrowMarker) {
+                    arrowMarker.style.transform = `rotate(${
+                      state.rot_z - 90
+                    }deg)`;
+                  }
                 }
               }
             } else {
@@ -321,13 +326,15 @@
                       name || "Unknown"
                     } (${type}/${anim})</div>
                     <div class="client-details">
-                      Lat/Lng: ${lat?.toFixed(4) || "N/A"}/${
-                        long?.toFixed(4) || "N/A"
-                      }<br>
+                      ${
+                        lat !== undefined && long !== undefined
+                          ? `Lat/Lng: ${lat.toFixed(4)}/${long.toFixed(4)}<br>`
+                          : "Lat/Lng: N/A/N/A<br"
+                      }
                       Alt: ${alt || "N/A"}m<br>
-                      Rot: ${rot_x?.toFixed(2) || "N/A"}°/${
-                        rot_y?.toFixed(2) || "N/A"
-                      }°/${rot_z?.toFixed(2) || "N/A"}°
+                      Rot: ${rot_x !== undefined ? rot_x.toFixed(2) : "N/A"}°/${
+                        rot_y !== undefined ? rot_y.toFixed(2) : "N/A"
+                      }°/${rot_z !== undefined ? rot_z.toFixed(2) : "N/A"}°
                     </div>
                   </div>
                 `;
@@ -353,11 +360,12 @@
                     keepAtCenter: false,
                   });
 
-                  const element = marker
-                    .getElement()
-                    ?.querySelector(".arrow-marker");
+                  const element = marker.getElement();
                   if (element) {
-                    element.style.transform = `rotate(${rot_z - 90}deg)`;
+                    const arrowMarker = element.querySelector(".arrow-marker");
+                    if (arrowMarker) {
+                      arrowMarker.style.transform = `rotate(${rot_z - 90}deg)`;
+                    }
                   }
                   marker.setTooltipContent(name);
                 } else {
