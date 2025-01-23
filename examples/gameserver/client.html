@@ -66,6 +66,8 @@
         overflow-y: auto;
       }
       .client-item {
+        display: flex;
+        flex-direction: column;
         border-bottom: 1px solid #eee;
         padding: 5px 0;
       }
@@ -74,17 +76,25 @@
       }
       .client-name {
         font-weight: bold;
+        margin-bottom: 5px;
       }
       .client-details {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
         color: #666;
         font-family: monospace;
         font-size: 0.9em;
+      }
+      .client-details div {
+        flex: 1;
       }
     </style>
   </head>
   <body>
     <div class="controls">
       <input type="text" id="nameInput" placeholder="Enter your name" />
+      <button id="setNameButton">Set Name</button>
       <div id="status">Disconnected</div>
       <div class="client-list" id="clientList"></div>
     </div>
@@ -174,11 +184,9 @@
           },
 
           initEventListeners() {
-            const nameInput = document.getElementById("nameInput");
-            nameInput.addEventListener("keypress", (e) => {
-              if (e.key === "Enter") {
-                this.setName();
-              }
+            const setNameButton = document.getElementById("setNameButton");
+            setNameButton.addEventListener("click", () => {
+              this.setName();
             });
           },
         };
@@ -326,15 +334,22 @@
                       name || "Unknown"
                     } (${type}/${anim})</div>
                     <div class="client-details">
-                      ${
-                        lat !== undefined && long !== undefined
-                          ? `Lat/Lng: ${lat.toFixed(4)}/${long.toFixed(4)}<br>`
-                          : "Lat/Lng: N/A/N/A<br"
-                      }
-                      Alt: ${alt || "N/A"}m<br>
-                      Rot: ${rot_x !== undefined ? rot_x.toFixed(2) : "N/A"}°/${
-                        rot_y !== undefined ? rot_y.toFixed(2) : "N/A"
-                      }°/${rot_z !== undefined ? rot_z.toFixed(2) : "N/A"}°
+                      <div>
+                        Lat/Lng:<br>
+                        Alt:<br>
+                        Rot:
+                      </div>
+                      <div>
+                        ${
+                          lat !== undefined && long !== undefined
+                            ? `${lat.toFixed(4)}/${long.toFixed(4)}<br>`
+                            : "N/A/N/A<br>"
+                        }
+                        ${alt || "N/A"}m<br>
+                        ${rot_x !== undefined ? rot_x.toFixed(2) : "N/A"}/${
+                          rot_y !== undefined ? rot_y.toFixed(2) : "N/A"
+                        }/${rot_z !== undefined ? rot_z.toFixed(2) : "N/A"}
+                      </div>
                     </div>
                   </div>
                 `;
