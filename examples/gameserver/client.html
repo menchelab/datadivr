@@ -176,7 +176,7 @@
             const name = nameInput.value.trim();
             if (name) {
               WSClient.send({
-                event_name: "GAMESERVER_CLIENT_SET_NAME",
+                event_name: "GAMESERVER_CLIENT_SETNAME",
                 to: "others",
                 payload: { name },
               });
@@ -328,11 +328,31 @@
                   type,
                   anim,
                 } = client;
+
+                // Determine the emoticon based on the type
+                let emoticon = "";
+                switch (type) {
+                  case 0:
+                    emoticon = "🪂";
+                    break;
+                  case 1:
+                    emoticon = "🛩️";
+                    break;
+                  case 2:
+                    emoticon = "🐲";
+                    break;
+                  case 3:
+                    emoticon = "🕊️";
+                    break;
+                  default:
+                    emoticon = "";
+                }
+
                 return `
                   <div class="client-item">
-                    <div class="client-name">${
+                    <div class="client-name">${emoticon} ${
                       name || "Unknown"
-                    } (${type}/${anim})</div>
+                    } ${anim}</div>
                     <div class="client-details">
                       <div>
                         Lat/Lng:<br>
