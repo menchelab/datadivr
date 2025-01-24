@@ -94,8 +94,13 @@ async def handle_connection(websocket: WebSocket) -> None:
 def add_client(websocket: WebSocket) -> str:
     """Add a new client and return its client ID."""
     client_id = str(uuid.uuid4())
-    clients[client_id] = {"websocket": websocket, "state": {}}
-    logger.info("client_connected", client_id=client_id, connected_clients=len(clients))
+    # Get client IP from the websocket connection
+    client_ip = websocket.client.host if websocket.client else "unknown"
+    clients[client_id] = {
+        "websocket": websocket,
+        "state": {"ip": client_ip},  # Store IP in initial state
+    }
+    logger.info("client_connected", client_id=client_id, ip=client_ip, connected_clients=len(clients))
     return client_id
 
 
