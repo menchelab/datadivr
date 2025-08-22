@@ -146,8 +146,10 @@
           handleMessage(event) {
             try {
               const data = JSON.parse(event.data);
+              console.log(data);
               if (data.event_name === "GAMESERVER_NEARBY_UPDATE") {
                 Markers.updateNearbyClients(data.payload.nearby_clients);
+                //console.log("Nearby clients updated:", data.payload.nearby_clients);
               }
             } catch (error) {
               console.error("Error parsing WebSocket message:", error);

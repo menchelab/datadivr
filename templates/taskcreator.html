@@ -1,0 +1,1114 @@
+<html>
+<script src="{{ url_for('static', path='/grid.js') }}"></script>
+<script>
+    class mcBezier extends HTMLElement {
+        constructor() {
+            super();
+        }
+        connectedCallback() {
+            let template = document.querySelector('#mcB-template').content;
+            this.attachShadow({ mode: 'open' }).appendChild(template.cloneNode(true));
+
+            var name = this.getAttribute('name');
+
+            var xmin = parseFloat(this.getAttribute('xmin'));
+            var xmax = parseFloat(this.getAttribute('xmax'));
+
+            var ymin = parseFloat(this.getAttribute('ymin'));
+            var ymax = parseFloat(this.getAttribute('ymax'));
+            var p0x = this.getAttribute('p0x');
+            var p0y = this.getAttribute('p0y');
+            var p1x = this.getAttribute('p1x');
+            var p1y = this.getAttribute('p1y');
+            var p2x = this.getAttribute('p2x');
+            var p2y = this.getAttribute('p2y');
+            var p3x = this.getAttribute('p3x');
+            var p3y = this.getAttribute('p3y');
+            var p4x = this.getAttribute('p4x');
+            var p4y = this.getAttribute('p4y');
+            var p5x = this.getAttribute('p5x');
+            var p5y = this.getAttribute('p5y');
+            var p6x = this.getAttribute('p6x');
+            var p6y = this.getAttribute('p6y');
+            //let name_button = this.shadowRoot.querySelector("#name");
+            let this_canvas = this.shadowRoot.querySelector("#myCanvas");
+            this_canvas.style.background = "url('static/images/grid.png')";
+            let label = this.shadowRoot.querySelector("#name");
+            label.innerHTML = name;
+
+
+            let yaxis = this.shadowRoot.querySelector("#yaxis");
+            yaxis.innerHTML = this.getAttribute('yaxis');
+            let yaxisL0 = this.shadowRoot.querySelector("#yaxisL0");
+            yaxisL0.innerHTML = ymin;
+            let yaxisL1 = this.shadowRoot.querySelector("#yaxisL1");
+            yaxisL1.innerHTML = ymin + (ymax - ymin) / 2;
+            let yaxisL2 = this.shadowRoot.querySelector("#yaxisL2");
+            yaxisL2.innerHTML = ymax;
+
+            let xaxis = this.shadowRoot.querySelector("#xaxis");
+            xaxis.innerHTML = this.getAttribute('xaxis');
+            let xaxisL0 = this.shadowRoot.querySelector("#xaxisL0");
+            xaxisL0.innerHTML = xmin;
+            let xaxisL1 = this.shadowRoot.querySelector("#xaxisL1");
+            xaxisL1.innerHTML = xmin + (xmax - xmin) / 2;
+            let xaxisL2 = this.shadowRoot.querySelector("#xaxisL2");
+            xaxisL2.innerHTML = xmax;
+
+
+
+
+
+            //document.getElementById("nextTP").innerHTML = rtimestr 
+            var c = this_canvas;
+            //var points = [198.470261, 195.236755, 189.973984, 186.208008, 182.249985, 175.979248, 171.59375, 167.058258, 162.384735, 157.585266, 152.671753, 147.65625, 142.550766, 137.367249, 132.117737, 129.472015, 124.145981, 118.783997, 113.39801, 108.000008, 102.60202, 99.906754, 94.53125, 89.185745, 83.88224, 78.632751, 76.032005, 70.885994, 65.824005, 60.858006, 58.414757, 53.615242, 48.941753, 44.406254, 40.020741, 35.797256, 33.75, 29.791996, 26.025999, 22.464001, 19.118004, 15.999999, 13.122001, 10.496004, 8.133999, 6.048, 3.462748, 2.11925, 1.09375, 0.178, 2.99975, 8.99325, 17.945999, 23.872002, 29.749998, 38.450752, 44.156254, 49.771751, 55.285248, 60.684746, 65.958252, 71.09375, 76.079262, 80.902756, 85.552246, 87.807999, 92.173988, 96.336006, 100.28199, 104.0, 107.478004, 109.123253, 112.21875, 115.044235, 117.587746, 119.837234, 120.847992, 122.634003, 124.095985, 125.222, 125.655258, 126.254753, 126.488251, 126.34375, 125.809235, 124.872742, 124.25, 122.688004, 120.694, 118.256004, 115.362, 112.0, 108.157997, 103.824005, 98.985992, 93.632004, 84.607239, 77.910751, 70.65625, 58.701992];
+            var mousePosition;
+            //track state of mousedown and up
+            var isMouseDown;
+
+
+            //name_button.style.background = this.getAttribute('color');
+            //name_button.style.background = url('images/NotR;ecording.png')
+            var fun = this.getAttribute('fn');
+
+
+            const context = this_canvas.getContext('2d');
+            var ctx = context;
+            //make some circles
+            var c1 = new Circle(p0x, p0y, 8, "blue", "black");
+            var c2 = new Circle(p1x, p1y, 6, "green", "black");
+            var c3 = new Circle(p2x, p2y, 6, "red", "black");
+            var c4 = new Circle(p3x, p3y, 8, "grey", "black");
+            var c5 = new Circle(p4x, p4y, 6, "green", "black");
+            var c6 = new Circle(p5x, p5y, 6, "green", "black");
+            var c7 = new Circle(p6x, p6y, 8, "blue", "black");
+            //initialise our circles
+            var circles = [c1, c2, c3, c4, c5, c6, c7];
+            var xoff = c3.x - c4.x;
+            var yoff = c3.y - c4.y;
+            var x1off = c5.x - c4.x;
+            var y1off = c5.y - c4.y;
+            c.addEventListener('mousemove', move, false);
+            c.addEventListener('mousedown', setDraggable, false);
+            c.addEventListener('mouseup', setDraggable, false);
+            c.addEventListener('click', () => {
+                //console.log('select ' + this.getAttribute('name'));
+                this.setAttribute('p0x', c1.x);
+                this.setAttribute('p0y', c1.y);
+                this.setAttribute('p1x', c2.x);
+                this.setAttribute('p1y', c2.y);
+                this.setAttribute('p2x', c3.x);
+                this.setAttribute('p2y', c3.y);
+                this.setAttribute('p3x', c4.x);
+                this.setAttribute('p3y', c4.y);
+                this.setAttribute('p4x', c5.x);
+                this.setAttribute('p4y', c5.y);
+                this.setAttribute('p5x', c6.x);
+                this.setAttribute('p5y', c6.y);
+                this.setAttribute('p6x', c7.x);
+                this.setAttribute('p6y', c7.y);
+
+                //socket.emit('ex', { usr:uid, msg: this.getAttribute('name'), id: this.getAttribute('parent'),val: this.getAttribute('val'),  fn: fun});
+            });
+            function draw() {
+                //clear canvas
+
+                ctx.clearRect(0, 0, c.width, c.height);
+
+                ctx.beginPath();
+                ctx.moveTo(c1.x, c1.y);
+                ctx.bezierCurveTo(c2.x, c2.y, c3.x, c3.y, c4.x, c4.y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(c4.x, c4.y);
+                ctx.bezierCurveTo(c5.x, c5.y, c6.x, c6.y, c7.x, c7.y);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.lineWidth = 1;
+                ctx.moveTo(c1.x, c1.y);
+                ctx.lineTo(c2.x, c2.y);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(c3.x, c3.y);
+                ctx.lineTo(c4.x, c4.y);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(c5.x, c5.y);
+                ctx.lineTo(c4.x, c4.y);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(c6.x, c6.y);
+                ctx.lineTo(c7.x, c7.y);
+                ctx.stroke();
+
+
+                drawCircles();
+                xoff = c3.x - c4.x;
+                yoff = c3.y - c4.y;
+                x1off = c5.x - c4.x;
+                y1off = c5.y - c4.y;
+            }
+
+            //draw circles
+            function drawCircles() {
+                for (var i = circles.length - 1; i >= 0; i--) {
+
+                    circles[i].draw();
+
+                }
+            }
+
+            //key track of circle focus and focused index
+            var focused = {
+                key: 0,
+                state: false
+            }
+
+            //circle Object
+            function Circle(x, y, r, fill, stroke) {
+                this.startingAngle = 0;
+                this.endAngle = 2 * Math.PI;
+                this.x = x;
+                this.y = y;
+                this.r = r;
+
+                this.fill = fill;
+                this.stroke = stroke;
+
+                this.draw = function () {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.r, this.startingAngle, this.endAngle);
+                    ctx.fillStyle = this.fill;
+                    ctx.lineWidth = 3;
+                    ctx.fill();
+                    ctx.strokeStyle = this.stroke;
+                    ctx.stroke();
+                }
+            }
+
+            function move(e) {
+                if (!isMouseDown) {
+                    return;
+                }
+                getMousePosition(e);
+                //if any circle is focused
+                if (focused.state) {
+                    if (circles[focused.key]["fill"] == "blue") {
+                        circles[focused.key].y = mousePosition.y;
+                    }
+                    else {
+                        circles[focused.key].x = mousePosition.x;
+                        circles[focused.key].y = mousePosition.y;
+                        if (circles[focused.key]["fill"] == "grey") {
+
+                            c3.x = mousePosition.x + xoff;
+                            c3.y = mousePosition.y + yoff;
+                            c5.x = mousePosition.x + x1off;
+                            c5.y = mousePosition.y + y1off;
+
+                        }
+
+                        if (circles[focused.key]["fill"] == "red") {
+                            c5.x = (c4.x - xoff);
+                            c5.y = (c4.y - yoff);
+                        }
+
+                    }
+
+                    draw();
+                    return;
+                }
+                //no circle currently focused check if circle is hovered
+                for (var i = 0; i < circles.length; i++) {
+                    if (intersects(circles[i])) {
+                        circles.move(i, 0);
+                        focused.state = true;
+                        break;
+                    }
+                }
+                draw();
+            }
+
+            //set mousedown state
+            function setDraggable(e) {
+                var t = e.type;
+                if (t === "mousedown") {
+                    isMouseDown = true;
+                } else if (t === "mouseup") {
+                    isMouseDown = false;
+                    releaseFocus();
+                }
+            }
+
+            function releaseFocus() {
+                focused.state = false;
+            }
+
+            function getMousePosition(e) {
+                var rect = c.getBoundingClientRect();
+                mousePosition = {
+                    x: Math.round(e.x - rect.left),
+                    y: Math.round(e.y - rect.top)
+                }
+            }
+
+            //detects whether the mouse cursor is between x and y relative to the radius specified
+            function intersects(circle) {
+                // subtract the x, y coordinates from the mouse position to get coordinates 
+                // for the hotspot location and check against the area of the radius
+                var areaX = mousePosition.x - circle.x;
+                var areaY = mousePosition.y - circle.y;
+                //return true if x^2 + y^2 <= radius squared.
+                return areaX * areaX + areaY * areaY <= circle.r * circle.r;
+            }
+
+
+
+            Array.prototype.move = function (old_index, new_index) {
+                if (new_index >= this.length) {
+                    var k = new_index - this.length;
+                    while ((k--) + 1) {
+                        this.push(undefined);
+                    }
+                }
+                this.splice(new_index, 0, this.splice(old_index, 1)[0]);
+            };
+            draw();
+            /*
+            for(var i = 0; i < 100; i++){
+                var newcircle = new Circle(i*4, points[i], 2, "blue", "black");
+                newcircle.draw();
+            }
+            */
+        }
+
+    }
+    customElements.define('mc-bezier', mcBezier);
+</script>
+
+
+<template id="mcB-template">
+    <style>
+        button {
+            width: 380px;
+            height: 30px;
+            font-family: 'Future', sans-serif;
+            overflow: hidden;
+            white-space: nowrap;
+            cursor: pointer;
+            box-sizing: border-box;
+            padding: 0px 6px;
+            text-align: left;
+            border-radius: 7px;
+
+            border-bottom-left-radius: 0px;
+            font-size: 24px;
+
+            color: rgb(255, 255, 255);
+            cursor: pointer;
+            background: rgba(66, 66, 66, 255);
+            border: 2px solid transparent;
+
+            text-transform: uppercase;
+        }
+
+        h3 {
+            text-align: center;
+            font-family: "arial";
+            font-weight: lighter;
+            font-size: 16px;
+            border: 0px;
+            width: 100%;
+            margin: 0px;
+            padding: 0px;
+            user-select: none;
+        }
+
+
+
+        h4 {
+            text-align: center;
+            font-family: "arial";
+            font-weight: lighter;
+            font-size: 10px;
+            border: 0px;
+            width: 100%;
+            margin: 0px;
+            padding: 0px;
+            user-select: none;
+        }
+
+        h1 {
+            text-align: center;
+            font-family: "arial";
+            font-weight: lighter;
+            font-size: 20px;
+            border: 0px;
+            width: 100%;
+            margin: 0px;
+            padding: 0px;
+            user-select: none;
+        }
+
+        button:hover {
+            border: 2px solid rgb(124, 124, 124);
+            background: rgba(66, 66, 66, 1);
+        }
+
+        button:active {
+            border: 2px solid rgb(190, 190, 190);
+        }
+    </style>
+
+    <h1 id="name" style="text-align:left;">climbrate at altitude</h1><br>
+    <div id="container"
+        style="width: auto; height: 400px; display: inline-block; padding: 20px 20px; position: relative;">
+        <div>
+            <h3 id="yaxis" style="position: absolute; right: -240px; top:50px; text-align:left; float:right; transform: rotate(-90deg);">CLIMB
+                m/s</h3>
+        </div>
+        <div>
+            <h4 id="yaxisL2" style=" position: absolute; top:110px;  left:425px; float:left; text-align:left; ">4</h4>
+        </div>
+        <div>
+            <h4 id="yaxisL1" style=" position: absolute; top:210px; left:425px; float:left; text-align:left; ">2</h4>
+        </div>
+        <div>
+            <h4 id="yaxisL0" style=" position: absolute; top:310px; left:425px; float:left; text-align:left; ">0</h4>
+        </div>
+        <div>
+            <h4 id="xaxisL0" style=" position: absolute; top:425px; left:20px; float:left; text-align:left; ">0</h4>
+        </div>
+        <div>
+            <h4 id="xaxisL1" style=" position: absolute; top:425px; left:220px; float:left; text-align:left; ">3000</h4>
+        </div>
+        <div>
+            <h4 id="xaxisL2" style=" position: absolute; top:425px; left:420px; float:left; text-align:left; ">6000</h4>
+        </div>
+        <div>
+            <h3 id="xaxis" style="position: absolute; right: 5px; top:0px; float:right; ">ALT m</h3>
+        </div>
+
+        <canvas id="myCanvas" width="400" height="400" style="border:1px solid"></canvas>
+    </div>
+
+</template>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style>
+    .column {
+        float: left;
+        width: 500px;
+        background-color: rgb(198, 198, 198);
+    }
+
+    /* Clear floats after the columns */
+    .row:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    h1 {
+        text-align: left;
+        font-family: "arial";
+        font-weight: lighter;
+        font-size: 30px;
+        border: 0px;
+        width: 100%;
+        margin: 5px;
+        padding: 0px;
+        user-select: none;
+    }
+
+    h3 {
+        text-align: left;
+        font-family: "arial";
+        font-weight: lighter;
+        font-size: 16px;
+        border: 0px;
+        width: 100%;
+        margin: 5px;
+        padding: 0px;
+        user-select: none;
+    }
+
+    h4 {
+        text-align: left;
+        font-family: "arial";
+        font-weight: lighter;
+        font-size: 10px;
+        border: 0px;
+        width: 100%;
+        margin: 5px;
+        padding: 0px;
+        user-select: none;
+    }
+
+    input, select{
+        padding:5px;
+        background-color: #7dbaff;
+        font-size: 25;
+    }
+    #map {
+        height: 400px;
+        
+    }
+
+        
+  
+    
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link href="{{ url_for('static', path='/leaflet.css') }}" rel="stylesheet">
+<script src="{{ url_for('static', path='/leaflet.js') }}"></script>
+<script src="{{ url_for('static', path='/airspace.js') }}"></script>
+<script src="{{ url_for('static', path='/tasks.js') }}"></script>
+<script src="{{ url_for('static', path='/igcParser.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.marker.slideto@0.2.0/Leaflet.Marker.SlideTo.js"></script>
+
+<body style="background: #4a9eff; overflow: hidden;">
+    
+    <div>
+
+        
+        <input type="button" value="FLY" onclick="fly();" />
+        
+        <input type="button" value="EXIT" onclick="quit();" />
+       
+    </div>
+    <div id="task"><br><h1> SELECT A TASK</h1><select id="tasklist" onchange="loadtask()"></select></div><br>
+    <div style="background: #4a9eff;  ">
+    
+
+    <div id="taskcreator" style="overflow: scroll; overflow-x:hidden ; height:70%; width:1000px; background-color: rgb(197, 197, 197); ">
+        <h1 style="background-color: #0099ff;">TASK DESIGNER<br></h1>
+        <br>
+
+        <div id="map"></div>
+         <h3>
+                <input id="setStart" type="button" value="SET START" onclick="setStart();" /> RADIUS:<input type="text"
+                    value="500" id="radius" size="3"> <input id="makeCylinder" type="button" value="MAKE CYLINDER"
+                    onclick="userMakeCylinder();" />
+                <input id="RESET" type="button" value="RESET" onclick="deleteCylinders();" />
+                                <h1 id="airspace">CLICK MAP FOR AIRSPACE INFO</h1>
+        </h3>
+        <h3>TASK NAME: <input type="text" id="taskname"><br>
+            <h3>CREATOR: <input type="text" id="creator"><br>START TIME: <input type="time" value="11:30"
+                    id="starttime"><br>TASK
+                DESCRIPTION: <br>
+                <textarea id="description" name="w3review" rows="6" cols="120">
+Add a short discription of the task, airspaces, weather conditions - will be shown in pre flight briefing
+        </textarea><br><br>
+            <h3>AIRCRAFT </h3>
+            <select name="aircraft" id="aircraft">
+                <option value="Paraglider">Paraglider</option>
+                <option value="Hangglider" disabled>Hangglider</option>
+                <option value="Glider" disabled>Glider</option>
+                <option value="Spectator">Spectator</option>
+            </select>
+                <h3>To create a task, first click on the takoff location on the map then press the SET START
+                    button.<br>After that, create the turnpoints by clicking the map and pressing the MAKE CYLINDER
+                    button with the desired radius.</h3>
+                    <h3>OR SELECT one or multiple IGC files</h3><input type="file" id="file-selector" value="GPS" accept=".igc" multiple>
+                <br>
+        
+            </h3>
+
+
+            
+
+
+
+            <br>
+            <h1 style="background-color: #f07cff;">THERMALS<br></h1>
+            <div class="row">
+                <div class="column" id="cCLIMB VS ALTITUDE">
+                    <mc-bezier name="CLIMB VS ALTITUDE" id="CLIMB VS ALTITUDE" xaxis="ALT m" yaxis="CLIMB m/s" xmin="0"
+                        ymin="0" xmax="4000" ymax="6" p0x="0" p0y="300" p1x="44" p1y="272" p2x="121" p2y="177" p3x="154"
+                        p3y="211" p4x="212" p4y="311" p5x="317" p5y="80" p6x="400" p6y="297"></mc-bezier>
+                </div>
+                <div class="column" id="cCLIMB VS TIME">
+                    <mc-bezier name="CLIMB VS TIME" id="CLIMB VS TIME" xaxis="TIME" yaxis="MULTI %" xmin="8" ymin="0"
+                        xmax="20" ymax="100" p0x="0" p0y="300" p1x="86" p1y="289" p2x="83" p2y="101" p3x="200" p3y="100"
+                        p4x="317" p4y="100" p5x="353" p5y="228" p6x="400" p6y="300"></mc-bezier>
+                </div>
+            </div>
+            <br>
+            <h1 style="background-color: #4aff74;">METEO WIND</h1><br>
+            <h3>WIND DIRECTION
+                <select name="winddir" id="wdir">
+                    <option value="N">N</option>
+                    <option value="O">O</option>
+                    <option value="S">S</option>
+                    <option value="W">W</option>
+                </select>
+            </h3>
+            <br>
+            <div class="row">
+                <div class="column" id="cWIND VS ALTITUDE">
+                    <mc-bezier name="WIND VS ALTITUDE" id="WIND VS ALTITUDE" xaxis="ALT m" yaxis="WIND km/h" xmin="0"
+                        ymin="0" xmax="4000" ymax="60" p0x="0" p0y="298" p1x="110" p1y="285" p2x="105" p2y="236"
+                        p3x="214" p3y="227" p4x="324" p4y="218" p5x="365" p5y="173" p6x="400" p6y="159"></mc-bezier>
+                </div>
+                <div class="column" id="cWIND VS TIME">
+                    <mc-bezier name="WIND VS TIME" id="WIND VS TIME" xaxis="TIME" yaxis="MULTI %" xmin="8" ymin="0"
+                        xmax="20" ymax="100" p0x="0" p0y="106" p1x="56" p1y="139" p2x="131" p2y="143" p3x="195"
+                        p3y="136" p4x="258" p4y="128" p5x="326" p5y="191" p6x="400" p6y="172"></mc-bezier>
+                </div>
+            </div><br>
+            <h1 style="background-color: #4a9eff;">VALLEY WIND</h1><br>
+            <div class="row">
+                <div class="column" id="cVALLEYWIND VS ALTITUDE">
+                    <mc-bezier name="VALLEYWIND VS ALTITUDE" id="VALLEYWIND VS ALTITUDE" xaxis="ALT m (AGL)"
+                        yaxis="WIND km/h" xmin="0" ymin="0" xmax="1000" ymax="40" p0x="0" p0y="169" p1x="58" p1y="170"
+                        p2x="71" p2y="222" p3x="125" p3y="225" p4x="266" p4y="235" p5x="124" p5y="300" p6x="400"
+                        p6y="301"></mc-bezier>
+                </div>
+                <div class="column" id="cVALLEYWIND VS TIME">
+                    <mc-bezier name="VALLEYWIND VS TIME" id="VALLEYWIND VS TIME" xaxis="TIME" yaxis="MULTI %" xmin="8"
+                        ymin="0" xmax="20" ymax="100" p0x="0" p0y="296" p1x="129" p1y="281" p2x="148" p2y="113"
+                        p3x="257" p3y="104" p4x="367" p4y="95" p5x="326" p5y="191" p6x="400" p6y="228"></mc-bezier>
+                </div>
+            </div>
+            <h1 style="background-color: #4a9eff;">CLOUDS</h1><br>
+            <div class="row">
+                <div class="column" id="cCLOUDCOVER VS TIME">
+                    <mc-bezier name="CLOUDCOVER VS TIME" id="CLOUDCOVER VS TIME" xaxis="TIME" yaxis="CLOUDS %" xmin="8"
+                        ymin="0" xmax="20" ymax="100" p0x="0" p0y="169" p1x="58" p1y="170" p2x="71" p2y="222" p3x="125"
+                        p3y="225" p4x="266" p4y="235" p5x="124" p5y="300" p6x="400" p6y="301"></mc-bezier>
+                </div>
+                <div class="column" id="cCLOUDBASE VS TIME">
+                    <mc-bezier name="CLOUDBASE VS TIME" id="CLOUDBASE VS TIME" xaxis="TIME" yaxis="CLOUDBASE m ASL"
+                        xmin="8" ymin="0" xmax="20" ymax="5000" p0x="0" p0y="296" p1x="129" p1y="281" p2x="148"
+                        p2y="113" p3x="257" p3y="104" p4x="367" p4y="95" p5x="326" p5y="191" p6x="400"
+                        p6y="228"></mc-bezier>
+                </div>
+            </div>
+            <br><input id="clickMe" type="button" value="SAVE TASK" onclick="savetask();" />
+    </div>
+    </div>
+</div>
+</body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="{{ url_for('static', path='/sectors.js') }}"></script>
+<script>
+
+    "object" != typeof ue || "object" != typeof ue.interface ? ("object" != typeof ue && (ue = {}), ue.interface = {}, ue.interface.broadcast = function (e, t) {
+        if ("string" == typeof e) {
+            var o = [e, ""];
+            void 0 !== t && (o[1] = t);
+            var n = encodeURIComponent(JSON.stringify(o));
+            "object" == typeof history && "function" == typeof history.pushState ? (history.pushState({}, "", "#" + n), history.pushState({}, "", "#" + encodeURIComponent("[]"))) : (document.location.hash = n, document.location.hash = encodeURIComponent("[]"))
+        }
+    }) : function (e) {
+        ue.interface = {},
+            ue.interface.broadcast = function (t, o) {
+                "string" == typeof t && (void 0 !== o ? e.broadcast(t, JSON.stringify(o)) : e.broadcast(t, ""))
+            }
+    }
+
+
+        (ue.interface), (ue4 = ue.interface.broadcast);
+
+
+
+
+
+        
+    var lat = 47.462269;
+    var lon = 13.33;
+    var map = L.map('map').setView([lat, lon], 10);
+    mapLink =
+        '<a href="http://openstreetmap.org">OpenStreetMap</a>';
+    L.tileLayer(
+        'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; ' + mapLink + ' Contributors',
+        maxZoom: 20,
+    }).addTo(map);
+
+    var target = L.latLng(lat, lon);
+    var TMarker = L.marker(target).addTo(map);
+    map.on('click', function (e) {
+        target = e.latlng;
+        TMarker.setLatLng(e.latlng);
+
+        testcoords = { "lat": target["lat"], "lon": target["lng"], "alt": 2000 };
+        document.getElementById("airspace").innerHTML = checkAirSpace(testcoords);
+        console.log(checkAirSpace(testcoords));
+        //checkAirSpace(coord)
+
+    });
+	
+	
+    L.geoJSON(sectors["features"], {
+				onEachFeature: function (feature, layer) {
+						layer.bindTooltip(feature.name, {permanent: true, offset: [0, 0] });
+				},
+				style: {color: "#00ff00" ,  fillOpacity: 0.0, stroke:"black" , strokewidth: 1}
+				
+	},).addTo(map);
+
+	
+	
+	L.geoJSON(grid["features"], {
+			onEachFeature: function (feature, layer) {
+					layer.bindTooltip(feature.name);
+			},
+			style: function(feature) {
+					switch (feature.stl) {
+						case 0: return {color: "#ff00ff", fillOpacity: 0.0, opacity:0.2, strokewidth: 1};
+						case 1:   return {color: "#0000ff", fillOpacity: 0.0, opacity:0.2, strokewidth: 1};
+					}
+	
+			}
+	}).addTo(map);
+
+
+	
+    const fileSelector = document.getElementById('file-selector');
+		fileSelector.addEventListener('change', (event) => {
+
+			const fileList = event.target.files;
+
+
+			for (let file = 0; file < fileList.length; file++) {
+				const reader = new FileReader();
+				reader.addEventListener('load', (event) => {
+					//console.log(fileList.length);
+					let flight = new Flight("flight");
+					flight.load_file(event.target.result, '.' + fileList[file].name.split('.').pop().toLowerCase());
+                    console.log(flight);
+					var latlngs = [];//for drawing on map
+					var newcoords = { "points": [], "taskname": document.getElementById('taskname').value +"_"+file, "name": flight["flight_info"]["pilot"]}; //for ue4
+                    
+					for (const key in flight["paragliding_info"]) {
+                        if(flight["paragliding_info"][key].latitude != undefined){
+                            latlngs.push([flight["paragliding_info"][key].latitude, flight["paragliding_info"][key].longitude]);
+
+                            var thispoint = { "lat": flight["paragliding_info"][key].latitude, "lon": flight["paragliding_info"][key].longitude, "ele": flight["paragliding_info"][key].gpsAltitude, "time": flight["paragliding_info"][key].time};
+                            newcoords["points"].push(thispoint);
+                        }
+					}
+
+					console.log(newcoords);
+
+					geo = L.polyline(latlngs, { color: getRandomColor(), weight: 2 });
+					geo.addTo(map);
+
+                    if (file == 0){
+                        takeoff.setLatLng(latlngs[0]);
+                        console.log(newcoords["points"][0]);
+                        document.getElementById("starttime").value = newcoords["points"][0]["time"];
+                    }
+					ue4("gpx", newcoords);
+
+
+
+				});
+				reader.readAsText(fileList[file]);
+			}
+
+			/*	
+				
+					file = f;
+					reader.readAsText(fileList[file]);
+				}
+				*/
+		});
+
+    var imageUrl = 'static/images/sectorF.png';
+    var errorOverlayUrl = 'https://cdn-icons-png.flaticon.com/512/110/110686.png';
+    var latLngBounds = L.latLngBounds([[47.602916319800066, 10.966327049448035], [45.60982004431531, 13.924564695604257]]);
+/*
+    var imageOverlay = L.imageOverlay(imageUrl, latLngBounds, {
+        opacity: 1,
+        errorOverlayUrl: errorOverlayUrl,
+        interactive: true
+    }).addTo(map);
+*/
+    var style1 = {
+        strokewidth: 1,
+        opacity: 1,
+        color: "#0000ff",
+        weight: 1
+    };
+
+
+    var style2 = {
+        strokewidth: 1,
+        opacity: 0.2,
+        color: "#ff0000",
+        weight: 1
+    };
+    var airspacelayer = L.geoJSON(airspaceLines["features"], style1).addTo(map);
+
+    var WindsockIcon = L.icon({
+        iconUrl: 'static/images/Windsack.png',
+        shadowUrl: 'static/images/plane_shadow.png',
+        iconSize: [58, 39], // size of the icon
+        shadowSize: [64, 64], // size of the shadow
+        iconAnchor: [29, 39], // point of the icon which will correspond to marker's location
+        shadowAnchor: [32, 32],  // the same for the shadow
+        popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
+    });
+    var takeoff = L.marker(target, { icon: WindsockIcon }).addTo(map);
+    var airspacelayer1 = L.geoJSON(airspaceCTR["features"], style2).addTo(map);
+
+    var tasklist = { "tasks": ["bischlingPinzgau.json", "stoderzinken1.json", "tasks.json"] }
+    populateTasklist(tasklist["tasks"]);
+
+    ue.interface.tasklist = function (data) {
+        x = JSON.parse(data);
+        console.log(data);
+        populateTasklist(x["tasks"]);
+    }
+    ue.interface.updatetask = function (data) {
+        //console.log(data);
+        x = JSON.parse(data);
+        //console.log(x["name"]);
+        updateTaskCreator(x);
+        //reloadmap();
+        //populateTasklist(x["tasks"]);
+    }
+
+    function populateTasklist(tasklist) {
+        let select = document.getElementById('tasklist');
+        select.options.length = 0;
+
+        for (var i = 0; i < tasklist.length; i++) {
+            var opt = document.createElement('option');
+            opt.value = tasklist[i];
+            opt.innerHTML = tasklist[i];
+            select.appendChild(opt);
+        }
+    }
+
+    function loadtask() {
+        d = document.getElementById("tasklist").value;
+        console.log(d);
+        var out = { "name": d }
+        ue4("loadtask", out);
+    }
+
+    function showpanel(panelname) {
+        console.log(panelname);
+        allpanels = ["taskcreator", "task"]
+        for (var i = 0; i < allpanels.length; i++) {
+            document.getElementById(allpanels[i]).style.visibility = "hidden";
+            //document.getElementById(allpanels[i]).style.display = "none";
+        }
+        document.getElementById(panelname).style.visibility = "visible";
+        //document.getElementById(panelname).style.display = "inline";
+    }
+
+    function test(point, vs) {
+        // ray-casting algorithm based on
+        // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+
+        var x = point[0], y = point[1];
+
+        var inside = false;
+        for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+            var xi = vs[i][0], yi = vs[i][1];
+            var xj = vs[j][0], yj = vs[j][1];
+
+            var intersect = ((yi > y) != (yj > y))
+                && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+
+        return inside;
+    };
+
+    function getRandomColor() {
+			var letters = '0123456789ABCDEF';
+			var color = '#';
+			for (var i = 0; i < 6; i++) {
+				color += letters[Math.floor(Math.random() * 16)];
+			}
+			return color;
+	}
+
+    function checkAirSpace(coord) {
+        outstring = "ok"
+        for (let i = 0; i < airspace["features"].length; i++) {
+
+            if (airspace["features"][i]["geometry"]["type"] == "MultiPolygon") {
+                //console.log("contains")
+                //
+                for (let j = 0; j < airspace["features"][i]["geometry"]["coordinates"][0].length; j++) {
+                    if (test([coord["lon"], coord["lat"]], airspace["features"][i]["geometry"]["coordinates"][0][j]) == true) {
+
+                        //if (coord["alt"] > airspace["features"][i]["properties"]["low"] && coord["alt"] < airspace["features"][i]["properties"]["up"]) {
+                        outstring = (airspace["features"][i]["properties"]["Name"] + "  " + airspace["features"][i]["properties"]["low"] + " - " + airspace["features"][i]["properties"]["up"]);
+                        //console.log(outstring);
+                        //}
+                    }
+
+                }
+
+
+            } else {
+                if (test([coord["lon"], coord["lat"]], airspace["features"][i]["geometry"]["coordinates"][0]) == true) {
+                    console.log("clicked " + airspace["features"][i]["properties"]["id"] + "  " + airspace["features"][i]["properties"]["low"] + " - " + airspace["features"][i]["properties"]["up"]);
+                    //if (coord["alt"] > airspace["features"][i]["properties"]["low"] && coord["alt"] < airspace["features"][i]["properties"]["up"]) {
+                    outstring = (airspace["features"][i]["properties"]["id"] + "  " + airspace["features"][i]["properties"]["low"] + " - " + airspace["features"][i]["properties"]["up"]);
+                    //console.log(outstring);
+                    //}
+                }
+
+            }
+
+        }
+        return outstring;
+    }
+
+    var cycounter = 0;
+    var cylinders = [];
+    var cylabels = [];
+    var lines = [];
+    var thisline = [];
+    var taskCylinder = [];
+
+    function userMakeCylinder() {
+        let r = document.getElementById("radius").value;
+
+        var taskcoords = target;
+        makeCylinder(taskcoords, r, cycounter)
+        cycounter++;
+    }
+
+    function makeCylinder(taskcoords, radius, i) {
+
+
+
+        //for (let i = 0; i < tasks["tasks"][0]["cylinder"].length; i++) {
+
+        var cylinder = new L.circle(taskcoords, parseInt(radius));
+        thisline.push(taskcoords);
+        cylinders.push(cylinder);
+        var style = { fillColor: "#0000ff", fillOpacity: 0.2, color: "#0000FF" };
+        cylinder.setStyle(style)
+        cylinder.addTo(map);
+        var tcy = { "lat": taskcoords["lat"], "lon": taskcoords["lng"], "rad": parseInt(radius) }
+        taskCylinder.push(tcy);
+        var ttext = "START";
+        console.log(i)
+        if (i > 0) {
+            ttext = i;
+            //console.log(cycounter);
+            var pointA = [thisline[i]["lat"], thisline[i]["lng"]];
+            var pointB = [thisline[i - 1]["lat"], thisline[i - 1]["lng"]];
+            var pointList = [pointA, pointB];
+            //console.log( thisline[cycounter-1]);
+            var tline = L.polyline(pointList).addTo(map);
+            lines.push(tline);
+        }
+
+        var myIcon = L.divIcon({ className: 'my-div-icon', html: ttext });
+        // you can set .my-div-icon styles in CSS
+        var thislabel = L.marker(taskcoords, { icon: myIcon }).addTo(map);
+        cylabels.push(thislabel);
+    }
+    function deleteCylinders() {
+        for (var i = 0; i < cylinders.length; i++) {
+            cylinders[i].remove();
+            cylabels[i].remove();
+
+        };
+
+        for (var i = 0; i < lines.length; i++) {
+            lines[i].remove();
+
+        };
+        lines = [];
+        thisline = [];
+        taskCylinder = [];
+        cycounter = 0;
+        cylinders = [];
+        cylabels = [];
+    }
+
+    function setStart() {
+        takeoff.setLatLng(target);
+    }
+
+    function timestringtoInt(instring) {
+        const timeArray = instring.split(":");
+        var time = parseInt(timeArray[0]) * 3600 + parseInt(timeArray[1]) * 60 + parseInt(timeArray[2]);
+        //console.log(time);
+        return time;
+    }
+
+    function savetask() {
+        ue4("saveTask", outputJson());
+    }
+
+    function fly() {
+        ue4("fly", outputJson());
+    }
+
+    function quit() {
+        ue4("quit", { "quit": "yes" });
+    }
+    function reloadmap() {
+        map.invalidateSize();
+    }
+
+    function outputJson() {
+
+        //console.log(takeoff.getLatLng());
+        let name = document.getElementById("taskname").value;
+        let creator = document.getElementById("creator").value;
+        //console.log(name);
+        let wdir = document.getElementById("wdir").value;
+        //console.log(wdir);
+        let description = document.getElementById("description").value;
+        //console.log(description);
+        let ttime = document.getElementById("starttime").value;
+        //console.log(timestringtoInt(ttime + ":00"));
+        let aircraft = document.getElementById("aircraft").value;
+        
+        const collection = document.getElementsByTagName("mc-bezier");
+        var outjson = { "name": name, "description": description, "creator":creator, "time": timestringtoInt(ttime + ":00"),"aircraft": aircraft, "winddir": wdir, "tofflat": takeoff.getLatLng()["lat"], "tofflon": takeoff.getLatLng()["lng"], "cylinder": taskCylinder, "beziers": [] }
+        for (let i = 0; i < collection.length; i++) {
+            var thisBezier = { "name": collection[i].getAttribute("name"), "xaxis": collection[i].getAttribute("xaxis"), "yaxis": collection[i].getAttribute("yaxis"), "xmin": collection[i].getAttribute("xmin"), "ymin": collection[i].getAttribute("ymin"), "xmax": collection[i].getAttribute("xmax"), "ymax": collection[i].getAttribute("ymax"), "p0x": collection[i].getAttribute("p0x"), "p0y": collection[i].getAttribute("p0y"), "p1x": collection[i].getAttribute("p1x"), "p1y": collection[i].getAttribute("p1y"), "p2x": collection[i].getAttribute("p2x"), "p2y": collection[i].getAttribute("p2y"), "p3x": collection[i].getAttribute("p3x"), "p3y": collection[i].getAttribute("p3y"), "p4x": collection[i].getAttribute("p4x"), "p4y": collection[i].getAttribute("p4y"), "p5x": collection[i].getAttribute("p5x"), "p5y": collection[i].getAttribute("p5y"), "p6x": collection[i].getAttribute("p6x"), "p6y": collection[i].getAttribute("p6y") };
+            outjson["beziers"].push(thisBezier);
+        }
+        return outjson;
+    }
+
+    function inttoTimestring(time) {
+        var h = Math.floor(time / 3600);
+        if (h < 10) {
+            h = "0" + h;
+        }
+        var m = Math.floor(time / 60 % 60);
+        if (m < 10) {
+            m = "0" + m;
+        }
+        var s = time % 60;
+        if (s < 10) {
+            s = "0" + s;
+        }
+        var out = h + ":" + m;//+ ":" + s;
+        //var time = parseInt(timeArray[0])*3600 + parseInt(timeArray[1])*60 + parseInt(timeArray[2]);
+        //console.log(time);
+        return out;
+    }
+
+    function updateTaskCreator(data) {
+        document.getElementById("taskname").value = data["name"];
+        document.getElementById("creator").value = data["creator"];
+        document.getElementById("description").value = data["description"];
+        document.getElementById("aircraft").value = data["aircraft"];
+        document.getElementById("starttime").value = inttoTimestring(data["time"]);
+        document.getElementById("wdir").value = data["winddir"];
+        takeoff.setLatLng({ "lat": data["tofflat"], "lng": data["tofflon"] });
+        map.setView(new L.LatLng(data["tofflat"], data["tofflon"]), 12);
+        for (var i = 0; i < data["beziers"].length; i++) {
+
+            let oldbezier = document.getElementById(data["beziers"][i]["name"]);
+            //console.log(oldbezier);
+            if (oldbezier != null) {
+                oldbezier.remove();
+            }
+
+            let thiscontainer = document.getElementById("c" + data["beziers"][i]["name"]);
+
+            let thisbezier = document.createElement('mc-bezier');
+            //console.log(data["beziers"][i]["name"]);
+            var keys = Object.keys(data["beziers"][i]);
+            thisbezier.setAttribute("id", data["beziers"][i]["name"]);
+            for (var j = 0; j < keys.length; j++) {
+                thisbezier.setAttribute(keys[j], data["beziers"][i][keys[j]]);
+                //setAttribute(keys[j], data["beziers"][i][keys[j]]);
+            }
+
+            thiscontainer.appendChild(thisbezier);
+        }
+        deleteCylinders();
+
+        var count = 0;
+        for (var x = 0; x < data["cylinder"].length; x++) {
+            makeCylinder({ "lat": data["cylinder"][x]["lat"], "lng": data["cylinder"][x]["lon"] }, data["cylinder"][x]["rad"], count);
+            count++;
+        }
+
+        
+    }
+</script>
+
+
+
+
+
+
+
+</html>

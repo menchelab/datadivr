@@ -129,7 +129,7 @@ async def info_update_handler(message: WebSocketMessage) -> None:
         logger.exception("Error handling GAMESERVER_CLIENT_UPDATE", error=str(e))
 
 
-@BackgroundTasks.periodic(interval=0.2, name="GAMESERVER_broadcast_nearby_clients")
+@BackgroundTasks.periodic(interval=1, name="GAMESERVER_broadcast_nearby_clients")
 async def broadcast_updates() -> None:
     """
     Periodically broadcast updates about nearby clients to each connected client.
@@ -252,6 +252,9 @@ async def set_name_handler(message: WebSocketMessage) -> None:
         # Update state with all fields
         update_client_state(message.from_id, **new_state)
         logger.debug("Updated client name", client_id=message.from_id, name=name)
+
+
+
     except Exception as e:
         logger.exception("Error handling GAMESERVER_CLIENT_SETNAME", error=str(e))
 

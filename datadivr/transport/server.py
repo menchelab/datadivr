@@ -18,13 +18,18 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
+from fastapi.responses import HTMLResponse
 from datadivr.core.tasks import BackgroundTasks
 from datadivr.exceptions import InvalidMessageFormat
 from datadivr.handlers.registry import HandlerType, get_handlers
 from datadivr.transport.models import WebSocketMessage
 from datadivr.utils.logging import get_logger
-
+import json
 logger = get_logger(__name__)
 
 # Module-level state
@@ -58,19 +63,36 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(lifespan=lifespan)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+# HTML ROUTE
+
+@app.get("/cloudbase1337", response_class=HTMLResponse)
+async def read_item(request: Request):
+    return templates.TemplateResponse(request=request, name="client.html", context={"id": 77})
 
 
+# WEBSOCKET ROUTES
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
     """Handle incoming WebSocket connections."""
     await BackgroundTasks.task(name=f"ws_connection_{id(websocket)}")(handle_connection)(websocket)
 
+taskdata = {}
+with open('bischlingPinzgau.json', 'r', encoding='utf-8') as f:
+    taskdata = json.load(f)
 
 @BackgroundTasks.task()
 async def handle_connection(websocket: WebSocket) -> None:
     """Handle a WebSocket connection lifecycle."""
     await websocket.accept()
     client_id = add_client(websocket)
+
+
+    await websocket.send_json({"event_name": "TASK", "payload": taskdata})
+    logger.info("client_connected", client_id=client_id)
+
 
     try:
         while True:
