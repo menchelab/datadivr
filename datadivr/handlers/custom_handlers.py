@@ -4,6 +4,8 @@ from datadivr.handlers.registry import HandlerType, websocket_handler
 from datadivr.project.project_manager import ProjectManager
 from datadivr.transport.models import WebSocketMessage
 from datadivr.utils.logging import get_logger
+import json
+import os
 
 logger = get_logger(__name__)
 
@@ -57,3 +59,18 @@ async def get_node_info_handler(message: WebSocketMessage) -> WebSocketMessage:
         return WebSocketMessage(event_name="get_node_info_result", payload={"error": str(e)}, to=message.from_id)
     except Exception as e:
         return WebSocketMessage(event_name="get_node_info_result", payload={"error": str(e)}, to=message.from_id)
+
+
+
+@websocket_handler("get_task", HandlerType.SERVER)
+async def get_task_handler(message: WebSocketMessage) -> WebSocketMessage:
+    """Handle requests to get information about a specific node."""
+    
+    filepath = os.path.dirname(os.path.realpath(__file__))
+    parent = os.path.abspath(os.path.join(filepath, os.pardir))
+    print("filepath:", )
+    with open(parent + "/transport/tasks/"+message.payload["name"], 'r', encoding='utf-8') as f:
+        thistaskdata = json.load(f)
+        print("task requested:", thistaskdata)
+
+    return WebSocketMessage(event_name="TASK", payload=thistaskdata, to=message.from_id)

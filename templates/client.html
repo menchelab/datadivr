@@ -144,24 +144,26 @@
       float: left;
       background-color: #a4dbff00;
       width: 25%;
-      
-      
+
+
       position: relative;
       z-index: 1000;
     }
 
 
     /* Clear floats after the columns */
-    .row{
+    .row {
       position: absolute;
-      
+
     }
+
     .row:after {
 
       content: "";
       display: table;
       clear: both;
     }
+
     .box {
       background-color: #a6ceea8f;
       border-radius: 4px;
@@ -175,30 +177,53 @@
 <body>
   <div class="row">
     <div class="column">
-      <div class="box"> 
+      <div class="box">
         <h1 id="demo"></h1>
         <p id="description"></p>
-        <button id="joinRace" type="button">JOIN RACE</button> or select a takeoff location and press
-        <button id="setStart" type="button">SET START</button>
+        or select a takeoff location and press
+
       </div>
     </div>
     <div class="column">
-      <div class="box"> 
+      <div class="box">
         <h1 id="airspaceInfo">AIRSPACE INFO</h1>
       </div>
     </div>
-    <div class="column" style="visibility: hidden;">re </div>
-    <div class="column"> 
-      <div class="box"> 
+    <div class="column" style="visibility: hidden;">FREE
+
+    </div>
+    <div class="column">
+      <div class="box" style=" height:45px;">
+        <div class="row">
+          <div class="column">
+            <button id="joinRace" type="button" style="height:40px; width:70px; margin:5px;">LIVE<br>RACE</button>
+          </div>
+          <div class="column">
+            <button id="histRace" type="button" style="height:40px; width:70px; margin:5px;">RE<br>RACE</button>
+          </div>
+          <div class="column">
+            <button id="setStart" type="button" style="height:40px; width:70px; margin:5px;">SET<br>START</button>
+          </div>
+          <div class="column">
+            <button id="setFly" type="button" style="height:40px; width:70px; margin:5px;; ">GO<br>FLY!</button>
+          </div>
+        </div>
+
+
+      </div>
+        
+        <select id="taskSelect" style="width:100%; border:10px;"></select>
+      <div class="box">
         <input type="text" id="nameInput" placeholder="Enter your name" />
         <button id="setNameButton">Set Name</button>
         <div id="status">Disconnected</div>
         <div class="client-list" id="clientList"></div>
-        </div>
+      </div>
     </div>
   </div>
 
-
+  <div style="position:absolute ;transform:translate(6px, 240px);"><img id="wind"
+      src="{{ url_for('static', path='/images/wind.png') }}"></div>
   <div id="map" style="position:absolute; "></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -214,7 +239,24 @@
     var lines = [];
     var thisline = [];
     var taskCylinder = [];
+    var task = {};
 
+    "object" != typeof ue || "object" != typeof ue.interface ? ("object" != typeof ue && (ue = {}), ue.interface = {}, ue.interface.broadcast = function (e, t) {
+      if ("string" == typeof e) {
+        var o = [e, ""];
+        void 0 !== t && (o[1] = t);
+        var n = encodeURIComponent(JSON.stringify(o));
+        "object" == typeof history && "function" == typeof history.pushState ? (history.pushState({}, "", "#" + n), history.pushState({}, "", "#" + encodeURIComponent("[]"))) : (document.location.hash = n, document.location.hash = encodeURIComponent("[]"))
+      }
+    }) : function (e) {
+      ue.interface = {},
+        ue.interface.broadcast = function (t, o) {
+          "string" == typeof t && (void 0 !== o ? e.broadcast(t, JSON.stringify(o)) : e.broadcast(t, ""))
+        }
+    }
+
+
+      (ue.interface), (ue4 = ue.interface.broadcast);
 
     (() => {
       // Constants
@@ -224,7 +266,7 @@
           DEFAULT_VIEW: [48.2082, 16.3738],
           DEFAULT_ZOOM: 13,
           CIRCLE_RADIUS: 100000, // 100 km
-          SLIDE_DURATION: 200, // ms for position update animation
+          SLIDE_DURATION: 1000, // ms for position update animation
         },
       };
 
@@ -256,7 +298,7 @@
         handleMessage(event) {
           try {
             const data = JSON.parse(event.data);
-            //console.log(data);
+            
             if (data.event_name === "GAMESERVER_NEARBY_UPDATE") {
               Markers.updateNearbyClients(data.payload.nearby_clients);
               //console.log("Nearby clients updated:", data.payload.nearby_clients);
@@ -264,6 +306,8 @@
             if (data.event_name === "TASK") {
 
               console.log("task received:", data.payload);
+              task = data.payload;
+              Map.deleteCylinders();
               var count = 0;
               for (var x = 0; x < data.payload["cylinder"].length; x++) {
                 Map.makeCylinder({ "lat": data.payload["cylinder"][x]["lat"], "lng": data.payload["cylinder"][x]["lon"] }, data.payload["cylinder"][x]["rad"], count);
@@ -272,7 +316,26 @@
               Map.setView(data.payload["tofflat"], data.payload["tofflon"], 10);
               Markers.updatePosition({ "lat": data.payload["tofflat"], "lng": data.payload["tofflon"] });
               document.getElementById("description").innerHTML = data.payload["description"];
-              Markers.createStartMarker({ "lat": data.payload["tofflat"], "lng": data.payload["tofflon"] });
+              takeoff.setLatLng({ "lat": data.payload["tofflat"], "lng": data.payload["tofflon"] });
+            }
+            if (data.event_name === "TASKLIST") {
+
+              console.log("tasklist received:", data.payload);
+              var select = document.getElementById("taskSelect");
+                for (let i = data.payload["tasks"].length - 1; i >= 0; i--) {
+                  
+                
+                  var opt = document.createElement("option");
+                  opt.value = data.payload["tasks"][i];
+                  opt.textContent = data.payload["tasks"][i];
+                  console.log(data.payload["tasks"][i]);
+                  select.appendChild(opt);
+                }
+            }
+            if (data.event_name === "get_task_result") {
+
+                console.log("task received:", data.payload);
+      
             }
           } catch (error) {
             console.error("Error parsing WebSocket message:", error);
@@ -308,9 +371,15 @@
           }
         },
 
+        setFly() {
+          ue4("fly", task);
+          console.log(task);
+        },
         setStartPoint() {
           console.log("set start point");
           takeoff.setLatLng(state.myMarker.getLatLng());
+          task["tofflat"] = state.myMarker.getLatLng().lat;
+          task["tofflon"] = state.myMarker.getLatLng().lng;
         },
 
         initEventListeners() {
@@ -322,6 +391,22 @@
           const setStartButton = document.getElementById("setStart");
           setStartButton.addEventListener("click", () => {
             this.setStartPoint();
+          });
+
+          const setFlyButton = document.getElementById("setFly");
+          setFlyButton.addEventListener("click", () => {
+            this.setFly();
+          });
+
+          const taskDD = document.getElementById("taskSelect");
+          taskDD.addEventListener("change", () => {
+            //this.setFly();
+            console.log(taskDD.value);
+            WSClient.send({
+              event_name: "get_task",
+              to: "server",
+              payload: {"name": taskDD.value},
+            });
           });
         },
       };
@@ -344,7 +429,12 @@
       // Map handlers
       const Map = {
         init() {
-          state.map = L.map("map").setView(
+          state.map = L.map('map', {
+            maxZoom: 20,
+            minZoom: 6,
+            zoomControl: false
+          });
+          state.map.setView(
             CONFIG.MAP.DEFAULT_VIEW,
             CONFIG.MAP.DEFAULT_ZOOM,
           );
@@ -364,10 +454,19 @@
           var airspacelayer1 = L.geoJSON(airspaceCTR["features"], style2).addTo(state.map);
 
           var airspacelayer = L.geoJSON(airspaceLines["features"], style1).addTo(state.map);
+          const WindsockIcon = L.icon({
+            iconUrl: 'static/images/Windsack.png',
+            shadowUrl: 'static/images/plane_shadow.png',
+            iconSize: [58, 39], // size of the icon
+            shadowSize: [64, 64], // size of the shadow
+            iconAnchor: [29, 39], // point of the icon which will correspond to marker's location
+            shadowAnchor: [32, 32],  // the same for the shadow
+            popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
+          });
+          takeoff = L.marker({ "lat": 47.34077696378628 , "lng": 13.096790697929256 }, { icon: WindsockIcon }).addTo(state.map)
 
 
-
-
+          new L.Control.Zoom({ position: 'bottomleft' }).addTo(state.map);
           state.map.on("click", this.onClick);
           state.map.on("mousemove", this.onMouseMove);
         },
@@ -390,6 +489,25 @@
 
         setView(lat, lng, zoom) {
           state.map.setView([lat, lng], zoom);
+        },
+
+        deleteCylinders() {
+          for (var i = 0; i < cylinders.length; i++) {
+              cylinders[i].remove();
+              cylabels[i].remove();
+
+          };
+
+          for (var i = 0; i < lines.length; i++) {
+              lines[i].remove();
+
+          };
+          lines = [];
+          thisline = [];
+          taskCylinder = [];
+          cycounter = 0;
+          cylinders = [];
+          cylabels = [];
         },
 
         makeCylinder(taskcoords, radius, i) {
@@ -450,18 +568,7 @@
       // Marker handlers
       const Markers = {
 
-        createStartMarker(latlng) {
-          const WindsockIcon = L.icon({
-            iconUrl: 'static/images/Windsack.png',
-            shadowUrl: 'static/images/plane_shadow.png',
-            iconSize: [58, 39], // size of the icon
-            shadowSize: [64, 64], // size of the shadow
-            iconAnchor: [29, 39], // point of the icon which will correspond to marker's location
-            shadowAnchor: [32, 32],  // the same for the shadow
-            popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
-          });
-          takeoff = L.marker(latlng, { icon: WindsockIcon }).addTo(state.map);
-        },
+
 
 
 
@@ -675,7 +782,7 @@
       var seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
       // Display the result in the element with id="demo"
-      document.getElementById("demo").innerHTML = "RACE STARTS IN " + hours + "h "
+      document.getElementById("demo").innerHTML = "LIVE RACE STARTS IN <br>" + hours + "h "
         + minutes + "m " + seconds + "s ";
 
       // If the count down is finished, write some text

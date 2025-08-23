@@ -83,7 +83,15 @@ taskdata = {}
 with open('bischlingPinzgau.json', 'r', encoding='utf-8') as f:
     taskdata = json.load(f)
 
+import os
+
+static_dir = os.path.join(os.path.dirname(__file__),  'tasks')
+taskfiles = {"tasks": os.listdir(static_dir)}
+#print(taskfiles)
+
 @BackgroundTasks.task()
+
+# NEW CONNECTION
 async def handle_connection(websocket: WebSocket) -> None:
     """Handle a WebSocket connection lifecycle."""
     await websocket.accept()
@@ -91,6 +99,8 @@ async def handle_connection(websocket: WebSocket) -> None:
 
 
     await websocket.send_json({"event_name": "TASK", "payload": taskdata})
+    await websocket.send_json({"event_name": "TASKLIST", "payload": taskfiles})
+
     logger.info("client_connected", client_id=client_id)
 
 
@@ -102,6 +112,7 @@ async def handle_connection(websocket: WebSocket) -> None:
                 message.from_id = client_id
                 response = await handle_msg(message)
                 if response is not None:
+
                     await broadcast(response, websocket)
             except ValueError as e:
                 logger.exception("invalid_message_format", error=str(e), client_id=client_id)
@@ -142,7 +153,9 @@ def get_client_state(client_id: str) -> dict[str, Any] | None:
 async def handle_msg(message: WebSocketMessage) -> WebSocketMessage | None:
     """Handle an incoming WebSocket message."""
     logger.debug("message_received", message=message.model_dump())
-
+    #print("message received:", message.payload)
+    print("message received:", message)
+    
     handlers = get_handlers(HandlerType.SERVER)
     if message.event_name in handlers:
         logger.info("handling_event", event_name=message.event_name)
@@ -151,10 +164,12 @@ async def handle_msg(message: WebSocketMessage) -> WebSocketMessage | None:
 
 
 async def broadcast(message: WebSocketMessage, sender: WebSocket) -> None:
+            
+                    
     """Broadcast a message to appropriate clients."""
     message_data = message.model_dump()
     targets: list[WebSocket] = []
-
+    print("broadcasting message:", message)
     if message.to == "all":
         targets = [data["websocket"] for data in clients.values()]
     elif message.to == "others":
