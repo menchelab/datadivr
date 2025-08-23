@@ -32,6 +32,7 @@
       background: rgba(255, 255, 255, 0.7);
       padding: 10px;
       border-radius: 4px;
+      font-family: Arial, sans-serif;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
       min-width: 200px;
     }
@@ -135,30 +136,75 @@
       margin: 0px;
       padding: 0px;
       user-select: none;
+
+      background-color: #0099ff00;
+    }
+
+    .column {
+      float: left;
+      background-color: #a4dbff00;
+      width: 25%;
+      
+      
+      position: relative;
+      z-index: 1000;
+    }
+
+
+    /* Clear floats after the columns */
+    .row{
+      position: absolute;
+      
+    }
+    .row:after {
+
+      content: "";
+      display: table;
+      clear: both;
+    }
+    .box {
+      background-color: #a6ceea8f;
+      border-radius: 4px;
+      padding: 10px;
+      margin: 10px;
+      font-family: "arial";
     }
   </style>
 </head>
 
 <body>
-  <div class="controls" style="left: 50px; width: 25%;">
-    <h1 id="demo"></h1>
-    <p id="description"></p>
-    <button id="joinRace" type="button" >JOIN RACE</button> or go <button id="FREEFLYING" type="button" >FREEFLYING</button>
-    <button id="setStart" type="button" style="visibility: hidden;" >SET START</button>
+  <div class="row">
+    <div class="column">
+      <div class="box"> 
+        <h1 id="demo"></h1>
+        <p id="description"></p>
+        <button id="joinRace" type="button">JOIN RACE</button> or select a takeoff location and press
+        <button id="setStart" type="button">SET START</button>
+      </div>
+    </div>
+    <div class="column">
+      <div class="box"> 
+        <h1 id="airspaceInfo">AIRSPACE INFO</h1>
+      </div>
+    </div>
+    <div class="column" style="visibility: hidden;">re </div>
+    <div class="column"> 
+      <div class="box"> 
+        <input type="text" id="nameInput" placeholder="Enter your name" />
+        <button id="setNameButton">Set Name</button>
+        <div id="status">Disconnected</div>
+        <div class="client-list" id="clientList"></div>
+        </div>
+    </div>
   </div>
 
-  <div class="controls">
-    <input type="text" id="nameInput" placeholder="Enter your name" />
-    <button id="setNameButton">Set Name</button>
-    <div id="status">Disconnected</div>
-    <div class="client-list" id="clientList"></div>
-  </div>
 
-  <div id="map"></div>
+  <div id="map" style="position:absolute; "></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet.marker.slideto@0.2.0/Leaflet.Marker.SlideTo.js"></script>
   <script src="{{ url_for('static', path='/sectors.js') }}"></script>
+  <script src="{{ url_for('static', path='/airspace.js') }}"></script>
   <script>
 
 
@@ -264,7 +310,7 @@
 
         setStartPoint() {
           console.log("set start point");
-          takeoff.setLatLng(state.myMarker.getLatLng()); 
+          takeoff.setLatLng(state.myMarker.getLatLng());
         },
 
         initEventListeners() {
@@ -280,6 +326,21 @@
         },
       };
 
+
+      var style1 = {
+        strokewidth: 1,
+        opacity: 1,
+        color: "#0000ff",
+        weight: 1
+      };
+
+
+      var style2 = {
+        strokewidth: 1,
+        opacity: 0.2,
+        color: "#ff0000",
+        weight: 1
+      };
       // Map handlers
       const Map = {
         init() {
@@ -290,20 +351,35 @@
           L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19,
           }).addTo(state.map);
+          /*
+                    L.geoJSON(sectors["features"], {
+                      onEachFeature: function (feature, layer) {
+                        layer.bindTooltip(feature.name, { permanent: true, offset: [0, 0] });
+                      },
+                      style: { color: "#00ff00", fillOpacity: 0.0, stroke: "black", strokewidth: 1 }
+          
+                    },).addTo(state.map);
+          */
 
-          L.geoJSON(sectors["features"], {
-            onEachFeature: function (feature, layer) {
-              layer.bindTooltip(feature.name, { permanent: true, offset: [0, 0] });
-            },
-            style: { color: "#00ff00", fillOpacity: 0.0, stroke: "black", strokewidth: 1 }
+          var airspacelayer1 = L.geoJSON(airspaceCTR["features"], style2).addTo(state.map);
 
-          },).addTo(state.map);
+          var airspacelayer = L.geoJSON(airspaceLines["features"], style1).addTo(state.map);
+
+
+
+
           state.map.on("click", this.onClick);
           state.map.on("mousemove", this.onMouseMove);
         },
 
         onClick(e) {
           Markers.updatePosition(e.latlng);
+          var target = e.latlng;
+
+
+          var testcoords = { "lat": target["lat"], "lon": target["lng"], "alt": 2000 };
+          document.getElementById("airspaceInfo").innerHTML = checkAirSpace(testcoords);
+          console.log(checkAirSpace(testcoords));
         },
 
         onMouseMove(e) {
@@ -373,7 +449,7 @@
 
       // Marker handlers
       const Markers = {
-        
+
         createStartMarker(latlng) {
           const WindsockIcon = L.icon({
             iconUrl: 'static/images/Windsack.png',
@@ -435,15 +511,15 @@
               true,
             ).addTo(state.map);
           }
-
-          if (state.myCircle) {
-            state.myCircle.setLatLng([lat, lng]);
-          } else {
-            state.myCircle = L.circle([lat, lng], {
-              radius: CONFIG.MAP.CIRCLE_RADIUS,
-            }).addTo(state.map);
-          }
-
+          /*
+                    if (state.myCircle) {
+                      state.myCircle.setLatLng([lat, lng]);
+                    } else {
+                      state.myCircle = L.circle([lat, lng], {
+                        radius: CONFIG.MAP.CIRCLE_RADIUS,
+                      }).addTo(state.map);
+                    }
+          */
           WSClient.send({
             event_name: "GAMESERVER_CLIENT_UPDATE_STATE",
             to: "others",
