@@ -243,7 +243,7 @@
     var playerpos = {
                 lat: 47.23807715727137,
                 long: 12.722411017577421,
-                alt: 500,
+                alt: 3000,
                 rot_x: 0.5,
                 rot_y: 0.5,
                 rot_z: 180,
@@ -267,13 +267,9 @@
     }
 
 
-      (ue.interface), (ue4 = ue.interface.broadcast);
+    (ue.interface), (ue4 = ue.interface.broadcast);
 
-    ue.interface.playerupdate = function (data) {
-      x = JSON.parse(data);
-      console.log(data);
-      //populateTasklist(x["tasks"]);
-    };
+
       (() => {
         // Constants
         const CONFIG = {
@@ -295,8 +291,15 @@
           myCircle: null,
           markers: {},
           rot_z: 90,
+          alt: 2000,
         };
-
+        ue.interface.playerupdate = function (data) {
+          //update playerpos variable
+          console.log(data);
+          playerpos = JSON.parse(data);
+          Markers.updatePosition();
+          //populateTasklist(x["tasks"]);
+        };
         // WebSocket handlers
         const WSClient = {
           connect() {
@@ -487,8 +490,11 @@
           },
 
           onClick(e) {
-            Markers.updatePosition(e.latlng);
             var target = e.latlng;
+            playerpos.lat =  target["lat"];
+            playerpos.long = target["lng"];
+            Markers.updatePosition();
+            
             var testcoords = { "lat": target["lat"], "lon": target["lng"], "alt": 2000 };
             document.getElementById("airspaceInfo").innerHTML = checkAirSpace(testcoords);
             console.log(checkAirSpace(testcoords));
@@ -496,7 +502,8 @@
 
           onMouseMove(e) {
             if (e.originalEvent.shiftKey) {
-              Markers.updatePosition(e.latlng);
+              
+              playerpos = { "lat": e.latlng["lat"], "long": e.latlng["lng"] };
             }
           },
 
@@ -601,33 +608,28 @@
             return L.marker(latlng, { icon: arrowIcon });
           },
 
-          updatePosition(latlng) {
-            const { lat, lng } = latlng;
-
+          updatePosition() {
+            //const { lat, lng } = playerpos.lat, playerpos.long ;
+            const lat = playerpos.lat;
+            const lng = playerpos.long;
             if (state.myMarker) {
-              const prevPos = state.myMarker.getLatLng();
-              if (prevPos.lat !== lat || prevPos.lng !== lng) {
-                state.rot_z = Map.calculateBearing(
-                  prevPos.lat,
-                  prevPos.lng,
-                  lat,
-                  lng,
-                );
+
 
                 state.myMarker.setLatLng([lat, lng]);
+                //state.rot_z = playerpos.rot_z;
+                //state.alt = playerpos.alt;
                 const element = state.myMarker.getElement();
                 if (element) {
                   const arrowMarker = element.querySelector(".arrow-marker");
                   if (arrowMarker) {
-                    arrowMarker.style.transform = `rotate(${state.rot_z - 90
-                      }deg)`;
+                    arrowMarker.style.transform = `rotate(${playerpos.rot_z - 90}deg)`;
                   }
                 }
-              }
+              
             } else {
               state.myMarker = this.createArrowMarker(
                 [lat, lng],
-                state.rot_z,
+                playerpos.rot_z - 90,
                 true,
               ).addTo(state.map);
             }
@@ -643,16 +645,7 @@
             WSClient.send({
               event_name: "GAMESERVER_CLIENT_UPDATE_STATE",
               to: "others",
-              payload: {
-                lat: lat,
-                long: lng,
-                alt: 500,
-                rot_x: 0.5,
-                rot_y: 0.5,
-                rot_z: state.rot_z,
-                type: 1,
-                anim: 0,
-              },
+              payload: playerpos,
             });
           },
 

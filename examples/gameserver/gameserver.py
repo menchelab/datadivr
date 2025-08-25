@@ -78,7 +78,7 @@ async def info_update_handler(message: WebSocketMessage) -> None:
     """
     try:
         data = message.payload
-
+        print("info_update_handler payload:", message.payload)
         latitude = data.get("lat")
         longitude = data.get("long")
         altitude = data.get("alt")
