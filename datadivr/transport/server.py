@@ -19,9 +19,11 @@ from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi import File, Form, UploadFile, Request, FastAPI, HTTPException
+from os import listdir
 
 from fastapi.responses import HTMLResponse
 from datadivr.core.tasks import BackgroundTasks
@@ -30,6 +32,12 @@ from datadivr.handlers.registry import HandlerType, get_handlers
 from datadivr.transport.models import WebSocketMessage
 from datadivr.utils.logging import get_logger
 import json
+import string
+import random
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+
 logger = get_logger(__name__)
 
 # Module-level state
@@ -61,12 +69,69 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         clients.clear()
         logger.debug("shutdown_completed")
 
+global userdb
+userdb = {}
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    
+    with open('users.json', 'r', encoding='utf-8') as f:
+        global userdb 
+        userdb = json.load(f)
+    f.close()
+    print(userdb)
+    yield
+    with open('users.json', 'w') as f:
+        json.dump(userdb, f)
+    f.close()
+    # Clean up the ML models and release the resources
+    print("shutdown")
+
 
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+
+    # Perform any startup tasks here
+#upload user textures
+@app.post("/upload")
+def upload( response: Response, file: UploadFile = File(...), myjson: str = Form(...)):
+
+    thisuser = json.loads(myjson)
+    print(thisuser["name"])
+    found = False
+    for user in userdb["users"]:
+        if user["name"] == thisuser["name"]:
+            found = True
+    
+    if found:
+        return {"message": f"user exists"}
+    else:
+                #raise HTTPException(status_code=400, detail='User already exists')
+        # In a real application, you would hash the password before storing it
+        thisuser["pw"] = id_generator()
+        thisuser["tex"] = file.filename
+        userdb["users"].append(thisuser)
+        name = thisuser["name"]
+        pw = thisuser["pw"]
+        try:
+            contents = file.file.read()
+            #print(file.name)
+            with open("uploaded_" + file.filename, "wb") as f:
+                f.write(contents)
+        except Exception:
+            raise HTTPException(status_code=500, detail='Something went wrong')
+        finally:
+            file.file.close()
+        response.set_cookie(key="name", value= name)
+        response.set_cookie(key="pw", value= pw)  
+        return {"message": f"Welcome {name} ! your Password is {pw}"}
 # HTML ROUTE
+@app.get("/upload")
+def main(request: Request):
+    return templates.TemplateResponse("upload.html", {"request": request})
+
 
 @app.get("/cloudbase1337", response_class=HTMLResponse)
 async def read_item(request: Request):
