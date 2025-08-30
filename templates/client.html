@@ -214,8 +214,8 @@
 
     <select id="taskSelect" style="width:100%; border:10px;"></select>
     <div class="box" style="background:rgba(255, 255, 255, 0.537);">
-      <input type="text" id="nameInput" placeholder="Enter your name" />
-      <button id="setNameButton">Set Name</button>
+      <H1 id="nameInput">name</H1>
+      
       <div id="status">Disconnected</div>
       <div class="client-list" id="clientList"></div>
     </div>
@@ -231,7 +231,14 @@
   <script src="{{ url_for('static', path='/sectors.js') }}"></script>
   <script src="{{ url_for('static', path='/airspace.js') }}"></script>
   <script>
-
+    function getCookie(name) {
+        function escape(s) { return s.replace(/([.*+?\^$(){}|\[\]\/\\])/g, '\\$1'); }
+        var match = document.cookie.match(RegExp('(?:^|;\\s*)' + escape(name) + '=([^;]*)'));
+        return match ? match[1] : null;
+    }
+    
+    var username = getCookie("name");
+    var pw = getCookie("pw");
 
     var cycounter = 0;
     var cylinders = [];
@@ -337,6 +344,7 @@
             Markers.updatePosition({ "lat": data.payload["tofflat"], "lng": data.payload["tofflon"] });
             document.getElementById("description").innerHTML = data.payload["description"];
             takeoff.setLatLng({ "lat": data.payload["tofflat"], "lng": data.payload["tofflon"] });
+            UI.setName();
           }
           if (data.event_name === "TASKLIST") {
 
@@ -381,8 +389,9 @@
 
       setName() {
         const nameInput = document.getElementById("nameInput");
-        const name = nameInput.value.trim();
-        if (name) {
+        nameInput.innerHTML = username
+        name = username
+        if (username) {
           WSClient.send({
             event_name: "GAMESERVER_CLIENT_SETNAME",
             to: "others",
@@ -403,10 +412,7 @@
       },
 
       initEventListeners() {
-        const setNameButton = document.getElementById("setNameButton");
-        setNameButton.addEventListener("click", () => {
-          this.setName();
-        });
+
 
         const setStartButton = document.getElementById("setStart");
         setStartButton.addEventListener("click", () => {
@@ -766,6 +772,7 @@
       Map.init();
       WSClient.connect();
       UI.initEventListeners();
+      
     };
 
   </script>

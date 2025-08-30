@@ -42,18 +42,13 @@ logger = get_logger(__name__)
 
 # Module-level state
 clients: dict[str, dict[str, Any]] = {}  # Use client_id as the key
-global userdb
-userdb = {}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Handle startup and shutdown events."""
     logger.debug("startup_initiated")
-    with open('users.json', 'r', encoding='utf-8') as f:
-        global userdb 
-        userdb = json.load(f)
-    f.close()
-    print(userdb)
+
     server_handlers = get_handlers(HandlerType.SERVER)
     logger.info("registered_server_handlers", handlers=list(server_handlers.keys()))
 
@@ -62,9 +57,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         logger.debug("shutdown_initiated", num_clients=len(clients))
-        with open('users.json', 'w') as f:
-            json.dump(userdb, f)
-        f.close()
+
         for client_id in list(clients.keys()):
             try:
                 await close_client_connection(client_id)
@@ -76,6 +69,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         clients.clear()
         logger.debug("shutdown_completed")
 
+global userdb
+userdb = {}
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    
+    with open('users.json', 'r', encoding='utf-8') as f:
+        global userdb 
+        userdb = json.load(f)
+    f.close()
+    print(userdb)
+    yield
+    with open('users.json', 'w') as f:
+        json.dump(userdb, f)
+    f.close()
+    # Clean up the ML models and release the resources
+    print("shutdown")
 
 
 app = FastAPI(lifespan=lifespan)
@@ -85,30 +95,6 @@ templates = Jinja2Templates(directory="templates")
 
     # Perform any startup tasks here
 #upload user textures
-@app.post("/pw")
-async def check_pw(request: Request, response: Response):
-    thisuser = await request.json()
-    name = thisuser["name"]
-    pw = thisuser["pw"]
-    print("json:", thisuser)
-    found = False
-    
-    for user in userdb["users"]:
-        print("user:", user)
-        if user["name"] == name:
-            
-            print("found user:", user)
-    
-            if user["pw"] == pw:
-                print("correct pw")
-                response.set_cookie(key="name", value= name)
-                response.set_cookie(key="pw", value= pw)
-                return {"message": f"CORRECT"}
-            else:
-                return {"message": f"WRONG PW"}
-   
-        
-
 @app.post("/upload")
 def upload( response: Response, file: UploadFile = File(...), myjson: str = Form(...)):
 
@@ -142,20 +128,14 @@ def upload( response: Response, file: UploadFile = File(...), myjson: str = Form
         response.set_cookie(key="pw", value= pw)  
         return {"message": f"Welcome {name} ! your Password is {pw}"}
 # HTML ROUTE
-@app.get("/login")
+@app.get("/upload")
 def main(request: Request):
     return templates.TemplateResponse("upload.html", {"request": request})
 
-@app.get("/items/{name}/{pw}")
-async def read_item(name: str, pw: str):
-    return {"item_id": name, "pw": pw}
 
 @app.get("/cloudbase1337", response_class=HTMLResponse)
 async def read_item(request: Request):
-    if request.cookies.get('name') is None:
-        return templates.TemplateResponse("upload.html", {"request": request})
-    else:
-        return templates.TemplateResponse(request=request, name="client.html", context={"id": 77})
+    return templates.TemplateResponse(request=request, name="client.html", context={"id": 77})
 
 
 # WEBSOCKET ROUTES

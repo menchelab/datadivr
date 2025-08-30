@@ -3,7 +3,7 @@
         const preview = document.querySelector('img');
         var file = document.getElementById('fileInput').files[0];
         const reader = new FileReader();
-        reader.addEventListener("load", function() {
+        reader.addEventListener("load", function () {
             preview.src = reader.result; // show image in <img> tag
         }, false);
         if (file) {
@@ -18,13 +18,18 @@
             formData.append('file', file);
             formData.append("myjson", JSON.stringify({ "name": document.getElementById("usr").value }));
             fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                    
-                })
+                method: 'POST',
+                body: formData,
+
+            })
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById("serverMsg").innerHTML = data.message;
+                    if (data.message === "user exists") {
+                        document.getElementById("passwordDiv").style.display = "contents";
+                    }
+
+
                 })
                 .catch(error => {
                     console.error(error);
@@ -32,6 +37,31 @@
         }
     }
 
+    function SendPassword() {
+        var pw = document.getElementById("pwInput").value
+        fetch('/pw', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ "name": document.getElementById("usr").value, "pw": pw })
+        })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("serverMsg").innerHTML = data.message;
+                if (data.message === "password set") {
+                    document.getElementById("passwordDiv").style.display = "none";
+                }
+                if (data.message === "CORRECT") {
+                     console.log("reload");
+                     location.reload();
+                       
+                }
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    }
 
     function getCookie(name) {
         function escape(s) { return s.replace(/([.*+?\^$(){}|\[\]\/\\])/g, '\\$1'); }
@@ -41,10 +71,17 @@
     username = getCookie("name")
     pw = getCookie("pw")
     //JSON.parse()
+    console.log(window.location.search.replace( "?", "" ).split("&"));
     console.log(username + " " + pw);
+
+
 </script>
 <input type="text" id="usr" value="Enter Username">
 <input type="file" id="fileInput" onchange="previewFile()"><br>
-<input type="button" value="Upload Image" onclick="uploadFile()">
-<p id="serverMsg"></p>
+<input type="button" value="CREATE USER" onclick="uploadFile()">
 <img height="200">
+<p id="serverMsg"></p>
+<div id="passwordDiv" style="display:none;">
+    <input type="text" id="pwInput" value="Enter Password">
+    <input type="button" value="Set Password" onclick=SendPassword()>
+    
