@@ -160,6 +160,7 @@ taskfiles = {"tasks": os.listdir(static_dir)}
 async def handle_connection(websocket: WebSocket) -> None:
     """Handle a WebSocket connection lifecycle."""
     await websocket.accept()
+    
     client_id = add_client(websocket)
 
 
