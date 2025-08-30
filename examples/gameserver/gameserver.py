@@ -115,6 +115,7 @@ async def info_update_handler(message: WebSocketMessage) -> None:
         update_client_state(
             message.from_id,
             name=current_name,
+            tex="sometex.png",
             lat=latitude,
             long=longitude,
             alt=altitude,
@@ -236,8 +237,11 @@ async def set_name_handler(message: WebSocketMessage) -> None:
     - message (WebSocketMessage): The incoming WebSocket message containing
       the client's new name.
     """
+
     try:
+        print("set_name_handler payload:", message.payload)
         name = message.payload.get("name", "")
+        tex = message.payload.get("tex", "")
         if not isinstance(name, str) or not name.strip():
             logger.error("Invalid name format")
             return
@@ -248,6 +252,7 @@ async def set_name_handler(message: WebSocketMessage) -> None:
         # Create new state dict with updated name
         new_state = existing_state.copy()
         new_state["name"] = name.strip()
+        new_state["tex"] = tex.strip()
 
         # Update state with all fields
         update_client_state(message.from_id, **new_state)

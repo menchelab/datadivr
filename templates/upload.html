@@ -74,6 +74,10 @@
     console.log(window.location.search.replace( "?", "" ).split("&"));
     console.log(username + " " + pw);
 
+    function login() {
+        window.location.href ="http://127.0.0.1:8765/cloudbase1337/0/0";
+    
+    }
 
 </script>
 <input type="text" id="usr" value="Enter Username">
@@ -81,7 +85,6 @@
 <input type="button" value="CREATE USER" onclick="uploadFile()">
 <img height="200">
 <p id="serverMsg"></p>
-<div id="passwordDiv" style="display:none;">
-    <input type="text" id="pwInput" value="Enter Password">
-    <input type="button" value="Set Password" onclick=SendPassword()>
+
+<input type="button" value="login" onclick=login()>
     

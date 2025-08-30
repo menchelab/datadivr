@@ -1,0 +1,42 @@
+<script type="text/javascript">
+
+
+
+    function SendPassword() {
+        var pw = document.getElementById("pwInput").value
+        var usr = document.getElementById("usr").value
+        fetch('/pw', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ "name": usr, "pw": pw })
+        })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("serverMsg").innerHTML = data.message;
+                console.log(data.message);
+                if (data.message === "CORRECT") {
+                     
+                     window.location.href ="http://127.0.0.1:8765/cloudbase1337/"+data.data.name+"/"+data.data.pw;
+                       
+                }
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    }
+
+    function createAccount() {
+        window.location.href ="http://127.0.0.1:8765/createAccount";
+    }
+
+</script>
+<input type="text" id="usr" value="Enter Username">
+
+
+
+<input type="text" id="pwInput" value="Enter Password">
+<input type="button" value="LOGIN" onclick=SendPassword()><h1> Or </h1>  <input type="button" value="CREATE ACCOUNT" onclick=createAccount()>
+<p id="serverMsg"></p>
+    

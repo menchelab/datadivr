@@ -175,6 +175,7 @@
 </head>
 
 <body>
+  
   <div class="row">
     <div class="column">
       <div class="box" style="background:rgba(255, 255, 255, 0.537);">
@@ -214,8 +215,8 @@
 
     <select id="taskSelect" style="width:100%; border:10px;"></select>
     <div class="box" style="background:rgba(255, 255, 255, 0.537);">
-      <H1 id="nameInput">name</H1>
-      
+      <H1 id="nameInput">{{ name }}</H1>
+      <div id = "usertex">{{tex}}</div>
       <div id="status">Disconnected</div>
       <div class="client-list" id="clientList"></div>
     </div>
@@ -231,14 +232,7 @@
   <script src="{{ url_for('static', path='/sectors.js') }}"></script>
   <script src="{{ url_for('static', path='/airspace.js') }}"></script>
   <script>
-    function getCookie(name) {
-        function escape(s) { return s.replace(/([.*+?\^$(){}|\[\]\/\\])/g, '\\$1'); }
-        var match = document.cookie.match(RegExp('(?:^|;\\s*)' + escape(name) + '=([^;]*)'));
-        return match ? match[1] : null;
-    }
-    
-    var username = getCookie("name");
-    var pw = getCookie("pw");
+
 
     var cycounter = 0;
     var cylinders = [];
@@ -344,10 +338,10 @@
             Markers.updatePosition({ "lat": data.payload["tofflat"], "lng": data.payload["tofflon"] });
             document.getElementById("description").innerHTML = data.payload["description"];
             takeoff.setLatLng({ "lat": data.payload["tofflat"], "lng": data.payload["tofflon"] });
-            UI.setName();
+            
           }
           if (data.event_name === "TASKLIST") {
-
+            UI.setName();
             console.log("tasklist received:", data.payload);
             var select = document.getElementById("taskSelect");
             for (let i = data.payload["tasks"].length - 1; i >= 0; i--) {
@@ -389,13 +383,14 @@
 
       setName() {
         const nameInput = document.getElementById("nameInput");
-        nameInput.innerHTML = username
-        name = username
-        if (username) {
+        var name = nameInput.innerHTML;
+        const texdiv = document.getElementById("usertex");
+        var tex = texdiv.innerHTML;
+        if (name) {
           WSClient.send({
             event_name: "GAMESERVER_CLIENT_SETNAME",
             to: "others",
-            payload: { name },
+            payload: { "name":name, "tex":tex },
           });
         }
       },
@@ -476,13 +471,14 @@
         
                   },).addTo(state.map);
         */
+        
 
         var airspacelayer1 = L.geoJSON(airspaceCTR["features"], style2).addTo(state.map);
 
         var airspacelayer = L.geoJSON(airspaceLines["features"], style1).addTo(state.map);
         const WindsockIcon = L.icon({
-          iconUrl: 'static/images/Windsack.png',
-          shadowUrl: 'static/images/plane_shadow.png',
+          iconUrl: 'http://127.0.0.1:8765/static/images/Windsack.png',
+          shadowUrl: 'http://127.0.0.1:8765/static/images/plane_shadow.png',
           iconSize: [58, 39], // size of the icon
           shadowSize: [64, 64], // size of the shadow
           iconAnchor: [29, 39], // point of the icon which will correspond to marker's location

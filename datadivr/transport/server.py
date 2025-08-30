@@ -34,8 +34,7 @@ from datadivr.utils.logging import get_logger
 import json
 import string
 import random
-def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
+
 
 
 logger = get_logger(__name__)
@@ -44,6 +43,25 @@ logger = get_logger(__name__)
 clients: dict[str, dict[str, Any]] = {}  # Use client_id as the key
 global userdb
 userdb = {}
+
+taskdata = {}
+with open('bischlingPinzgau.json', 'r', encoding='utf-8') as f:
+    taskdata = json.load(f)
+
+import os
+
+static_dir = os.path.join(os.path.dirname(__file__),  'tasks')
+taskfiles = {"tasks": os.listdir(static_dir)}
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+def searchUser (name,pw):
+    for user in userdb["users"]:
+        if user["name"] == name:
+            if user["pw"] == pw:
+                return user
+    return None 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -96,18 +114,18 @@ async def check_pw(request: Request, response: Response):
     for user in userdb["users"]:
         print("user:", user)
         if user["name"] == name:
-            
+            found = True
             print("found user:", user)
     
             if user["pw"] == pw:
                 print("correct pw")
-                response.set_cookie(key="name", value= name)
-                response.set_cookie(key="pw", value= pw)
-                return {"message": f"CORRECT"}
+                return {"message": f"CORRECT","data":thisuser}
             else:
                 return {"message": f"WRONG PW"}
+    if not found:
+        return {"message": f"NO USER Called {name}"}
    
-        
+      
 
 @app.post("/upload")
 def upload( response: Response, file: UploadFile = File(...), myjson: str = Form(...)):
@@ -134,28 +152,29 @@ def upload( response: Response, file: UploadFile = File(...), myjson: str = Form
             #print(file.name)
             with open("uploaded_" + file.filename, "wb") as f:
                 f.write(contents)
+
         except Exception:
             raise HTTPException(status_code=500, detail='Something went wrong')
         finally:
             file.file.close()
-        response.set_cookie(key="name", value= name)
-        response.set_cookie(key="pw", value= pw)  
         return {"message": f"Welcome {name} ! your Password is {pw}"}
 # HTML ROUTE
-@app.get("/login")
-def main(request: Request):
+@app.get("/createAccount")
+def newaccount(request: Request):
     return templates.TemplateResponse("upload.html", {"request": request})
 
-@app.get("/items/{name}/{pw}")
-async def read_item(name: str, pw: str):
-    return {"item_id": name, "pw": pw}
+@app.get("/clients")
+def showclients():
+    print("clients:", clients)
+    #return json.dumps(clients)
 
-@app.get("/cloudbase1337", response_class=HTMLResponse)
-async def read_item(request: Request):
-    if request.cookies.get('name') is None:
-        return templates.TemplateResponse("upload.html", {"request": request})
+@app.get("/cloudbase1337/{name}/{pw}", response_class=HTMLResponse)
+async def multiplayermap(request: Request, name: str, pw: str):
+    thisuser = searchUser(name,pw)  
+    if thisuser is None:
+        return templates.TemplateResponse("login.html", {"request": request})
     else:
-        return templates.TemplateResponse(request=request, name="client.html", context={"id": 77})
+        return templates.TemplateResponse(request=request, name="client.html", context={"name": name, "tex": thisuser["tex"]})
 
 
 # WEBSOCKET ROUTES
@@ -164,14 +183,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     """Handle incoming WebSocket connections."""
     await BackgroundTasks.task(name=f"ws_connection_{id(websocket)}")(handle_connection)(websocket)
 
-taskdata = {}
-with open('bischlingPinzgau.json', 'r', encoding='utf-8') as f:
-    taskdata = json.load(f)
 
-import os
-
-static_dir = os.path.join(os.path.dirname(__file__),  'tasks')
-taskfiles = {"tasks": os.listdir(static_dir)}
 #print(taskfiles)
 
 @BackgroundTasks.task()
