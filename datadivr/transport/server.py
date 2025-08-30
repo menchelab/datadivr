@@ -150,7 +150,7 @@ def upload( response: Response, file: UploadFile = File(...), myjson: str = Form
         try:
             contents = file.file.read()
             #print(file.name)
-            with open("uploaded_" + file.filename, "wb") as f:
+            with open("static/userskins/" + file.filename, "wb") as f:
                 f.write(contents)
 
         except Exception:
