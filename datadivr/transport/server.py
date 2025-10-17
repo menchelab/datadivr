@@ -128,7 +128,7 @@ async def check_pw(request: Request, response: Response):
       
 
 @app.post("/upload")
-def upload( response: Response, file: UploadFile = File(...), myjson: str = Form(...)):
+async def upload( response: Response, file: UploadFile = File(...), myjson: str = Form(...)):
 
     thisuser = json.loads(myjson)
     print(thisuser["name"])
@@ -160,11 +160,11 @@ def upload( response: Response, file: UploadFile = File(...), myjson: str = Form
         return {"message": f"Welcome {name} ! your Password is {pw}"}
 # HTML ROUTE
 @app.get("/createAccount")
-def newaccount(request: Request):
+async def newaccount(request: Request):
     return templates.TemplateResponse("upload.html", {"request": request})
 
 @app.get("/clients")
-def showclients():
+async def showclients():
     print("clients:", clients)
     #return json.dumps(clients)
 

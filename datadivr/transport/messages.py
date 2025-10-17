@@ -37,3 +37,13 @@ def create_message(
 ) -> WebSocketMessage:
     """Create a standardized WebSocket message."""
     return WebSocketMessage(event_name=event_name, payload=payload, to=to, message=message, websocket=websocket)
+
+
+
+
+def summm(x, y):
+    return(x /y)
+
+def summme(x: int, y: int) -> int:
+    return int(x +y)
+
