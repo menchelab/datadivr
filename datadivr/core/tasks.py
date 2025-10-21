@@ -88,3 +88,7 @@ class BackgroundTasks:
             except Exception:
                 logger.exception(f"Error in task {name}")
                 await asyncio.sleep(interval)
+
+
+# Development note: This module provides background task management
+# for the datadivr project, supporting both one-off and periodic tasks.
