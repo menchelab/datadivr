@@ -60,7 +60,7 @@ async def get_node_info_handler(message: WebSocketMessage) -> WebSocketMessage:
     except Exception as e:
         return WebSocketMessage(event_name="get_node_info_result", payload={"error": str(e)}, to=message.from_id)
 
-
+'''
 
 @websocket_handler("get_task", HandlerType.SERVER)
 async def get_task_handler(message: WebSocketMessage) -> WebSocketMessage:
@@ -74,3 +74,4 @@ async def get_task_handler(message: WebSocketMessage) -> WebSocketMessage:
         print("task requested:", thistaskdata)
 
     return WebSocketMessage(event_name="TASK", payload=thistaskdata, to=message.from_id)
+'''

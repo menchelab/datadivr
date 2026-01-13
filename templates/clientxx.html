@@ -19,7 +19,7 @@
     }
 
     #map {
-      height: 30vh;
+      height: 100vh;
       width: 100%;
     }
 
@@ -143,7 +143,7 @@
     .column {
       float: left;
       background: #a4dbff00;
-      width: 20%;
+      width: 25%;
 
 
       position: relative;
@@ -175,20 +175,19 @@
     /* Style the tab */
     .tab {
       overflow: hidden;
-
+      border: 1px solid #ccc;
+      background-color: #f1f1f1;
     }
 
     /* Style the buttons that are used to open the tab content */
     .tab button {
       background-color: inherit;
       float: left;
-      border: 1;
+      border: none;
       outline: none;
       cursor: pointer;
-      padding: 5px 5px;
+      padding: 14px 16px;
       transition: 0.3s;
-      margin: 0px;
-
     }
 
     /* Change background color of buttons on hover */
@@ -211,127 +210,106 @@
   </style>
 </head>
 
-<body style="overflow: hidden;">
+<body>
 
 
 
-
-  <div class="column">
-    <!--<div class="box" style="background:rgba(255, 255, 255, 0.537);">-->
-      <!-- Tab links -->
+  <div class="container">
+    <div class="col">Column 1
       <div class="tab">
-        <button id="freefly" class="tablinks" onclick="openTab(event, 'London'); setState('freefly')">FREE FLY</button>
-        <button id="contest" class="tablinks" onclick="openTab(event, 'Paris'); setState('contest')">CONTEST</button>
-        <button id="live" class="tablinks" onclick="openTab(event, 'Tokyo'); setState('live')">LIVE RACE</button>
+        <button id="freefly" class="tablinks" onclick="openTab(event, 'London')">FREE FLY</button>
+        <button id="contest" class="tablinks" onclick="openTab(event, 'Paris')">CONTEST</button>
+        <button id="live" class="tablinks" onclick="openTab(event, 'Tokyo')">LIVE RACE</button>
+        <button id="quit" class="tablinks" onclick="quit()">EXIT</button>
+
       </div>
-    
+      
+    </div>
+    <div class="col">Column 2</div>
+    <div class="col">Column 3</div>
+    <div class="col">Column 4</div>
+  </div>
 
     <div class="box" style="background:rgba(255, 255, 255, 0.537);">
-      
+      <!-- Tab links -->
+
+
+      <!-- Tab content -->
       <div id="London" class="tabcontent">
-        <h3>SELECT TAKEOFF</h3><br>
-        <select id=pgtakeoff style="font-size: 20px;"></select><br>
-        <p>or Set Takeoff on map and click SET START</p>
-            
+        <h3>Select Takeoff</h3>
+        <select id=pgtakeoff></select>
+        <h3>or Set Takeoff on map and click SET START</h3>
         <button id="setStart" type="button" style="height:40px; width:70px; margin:5px;">SET<br>START</button>
       </div>
 
       <div id="Paris" class="tabcontent">
 
-        <h3>SELECT A TASK</h3><br>
-        <select id="taskSelect" style="font-size: 20px;"></select><br>
+        <h3>SELECT A TASK</h3>
+        <select id="taskSelect" style="width:100%; border:10px;"></select>
+        <p id="description1"></p>
 
+        <table style="width:100%">
+          <table id="ranking">
 
-        
-
+          </table>
       </div>
 
       <div id="Tokyo" class="tabcontent">
-        <h3>LIVE RACE</h3><br>
-        <h1 id="demo"></h1><br>
+        <h3>LIVE RACE</h3>
+        <h1 id="demo"></h1>
         <p id="description"></p>
       </div>
 
     </div>
 
+    
 
 
-    <div class="box" style="background:rgba(255, 255, 255, 0.537);">
-      <h3 id="airspaceInfo">AIRSPACE INFO</h3>
-      <div style="position:absolute ;    z-index: 1999;"><img id="wind"
-          src="http://127.0.0.1:8765/static/images/wind.png"></div>
-      <div id="map"></div>
-    </div>
-
-  </div>
-
-  <div class="column">
-
-<br>
-  </div>
-
-  <div class="column">
-
-    <br>
-  </div>
-  <div class="column">
-    <br>
-  </div>
-  <div class="column">
-    <div class="box" style=" height:45px; background:rgba(255, 255, 255, 0.537); ">
-      <div class=" row">
 
 
-        <div class="tab">
-          <button id="quit" class="tablinks" onclick="quit()">EXIT</button>
-          <button id="setFly" class="tablinks" style="margin-left: 30px;">FLY!</button>
+      <div class="box" style="background:rgba(255, 255, 255, 0.537);">
+        <h3 id="airspaceInfo">AIRSPACE INFO</h3>
+      </div>
+      <div class="box" style=" height:45px; background:rgba(255, 255, 255, 0.537);"">
+        <div class=" row">
+
+        <div class="column">
+          <button id="setFly" type="button" style="height:40px; width:70px; margin:5px;; ">GO<br>FLY!</button>
         </div>
-
       </div>
     </div>
+    <div class="column" style="visibility: hidden;">FREE
+
+    </div>
+    <div class="column">
+
+
+
+    </div>
+
 
     <div class="box" style="background:rgba(255, 255, 255, 0.537);">
-      <h0 id="nameInput"></h0>
-      <div id="usertex"></div>
+      <H1 id="nameInput">{{ name }}</H1>
+      <div id="usertex">{{tex}}</div>
       <div id="status">Disconnected</div>
-      <div class="client-list" id="clientList" style="display: none;"></div>
+      <div class="client-list" id="clientList"></div>
     </div>
+  
 
-    <div class="box" style="background:rgba(255, 255, 255, 0.537);">
-      <p id="description1"></p>
-    </div>
-    <div class="box" style="background:rgba(255, 255, 255, 0.537);">
-      <h3>WEATHER</h3><br>
-      <p id="wdescription"></p>
-    </div>
 
-    <div class="box" style="background:rgba(255, 255, 255, 0.537);">
-              
-          <table id="ranking">
-
-          </table>
-    </div>
-
+    
+  </div>
   </div>
 
-
-
+  <div style="position:absolute ;transform:translate(6px, 240px);"><img id="wind"
+      src="{{ url_for('static', path='/images/wind.png') }}"></div>
+  <div id="map" style="position:absolute; "></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet.marker.slideto@0.2.0/Leaflet.Marker.SlideTo.js"></script>
-  <script src="http://127.0.0.1:8765/static/sectors.js"></script>
-  <script src="http://127.0.0.1:8765/static/airspace.js"></script>
+  <script src="{{ url_for('static', path='/sectors.js') }}"></script>
+  <script src="{{ url_for('static', path='/airspace.js') }}"></script>
   <script>
-    var livetrack = true;
-    function setState(state){
-      console.log(state);
-      if(state == "contest"){
-        livetrack = false;
-      }else{
-        livetrack = true;
-        
-      }
-    }
 
     function openTab(evt, cityName) {
       // Declare all variables
@@ -373,11 +351,6 @@
       return out;
     }
 
-    let tdata = "{{ json_data }}";
-    var re = new RegExp('&#39;', 'g');
-    var decoded = tdata.replace(re, '"');
-    var taskdata = JSON.parse(decoded);
-    console.log(taskdata["user"]);
 
     var cycounter = 0;
     var cylinders = [];
@@ -385,13 +358,16 @@
     var lines = [];
     var thisline = [];
     var taskCylinder = [];
-    var task = {}//taskdata["tasks"]["livetask"];
-    //let tdata = "";
+    var task = {};
+    //let tdata = "{{ name }}";
+    let tdata = "{{ json_data }}";
+
+    var re = new RegExp('&#39;', 'g');
 
 
-
-
-    document.getElementById("nameInput").innerHTML = taskdata["user"]["name"];
+    var decoded = tdata.replace(re, '"');
+    console.log(decoded);
+    var taskdata = JSON.parse(decoded);
 
     var select = document.getElementById("taskSelect");
     for (let i = 0; i < taskdata["tasks"].length; i++) {
@@ -459,10 +435,6 @@
 
       (ue.interface), (ue4 = ue.interface.broadcast);
 
-
-
-    ue4("login", taskdata["user"])
-
     function quit() {
       ue4("quit", { "quit": "yes" });
     }
@@ -494,12 +466,6 @@
       console.log(data);
       playerpos = JSON.parse(data);
       Markers.updatePosition();
-      
-      WSClient.send({
-          event_name: "GAMESERVER_CLIENT_UPDATE_STATE",
-          to: "others",
-          payload: playerpos,
-      });
       //populateTasklist(x["tasks"]);
     };
 
@@ -521,7 +487,6 @@
 
 
         console.log("is connected ");
-        UI.setName();
         //UI.getTaskList();
         state.ws.onclose = () => {
           UI.updateStatus("Disconnected");
@@ -555,7 +520,6 @@
             Markers.updatePosition({ "lat": data.payload["tofflat"], "lng": data.payload["tofflon"] });
             document.getElementById("description").innerHTML = data.payload["description"];
             document.getElementById("description1").innerHTML = data.payload["description"];
-            document.getElementById("wdescription").innerHTML = data.payload["wdescription"];
             takeoff.setLatLng({ "lat": data.payload["tofflat"], "lng": data.payload["tofflon"] });
             var fruits = ['Apples', 'Oranges', 'Pears', 'Grapes', 'Pineapples', 'Mangos'];
             var listOfPilots = [];
@@ -574,7 +538,7 @@
 
           }
           if (data.event_name === "TASKLIST") {
-
+            //UI.setName();
             console.log("tasklist received:", data.payload);
 
           }
@@ -619,10 +583,9 @@
 
       setName() {
         const nameInput = document.getElementById("nameInput");
-        var name = taskdata["user"]["name"];
+        var name = nameInput.innerHTML;
         const texdiv = document.getElementById("usertex");
         var tex = texdiv.innerHTML;
-        console.log(name);
         if (name) {
           WSClient.send({
             event_name: "GAMESERVER_CLIENT_SETNAME",
@@ -633,9 +596,6 @@
       },
 
       setFly() {
-        task["livetracking"] = livetrack;
-        if (livetrack){task["tracks"] = [];}
-        
         ue4("fly", task);
         console.log(task);
       },
@@ -671,27 +631,14 @@
           });
         });
 
-
-        const freefly = document.getElementById("freefly");
-        freefly.addEventListener("click", () => {
-          //this.setFly();
-           
-          WSClient.send({
-            event_name: "get_task",
-            to: "server",
-            payload: { "name": taskDD.value, "index": parseInt(taskdata["livetask"]) },
-            
-          });
-        });
         const livetask = document.getElementById("live");
         livetask.addEventListener("click", () => {
           //this.setFly();
-           
+
           WSClient.send({
             event_name: "get_task",
             to: "server",
-            payload: { "name": taskDD.value, "index": parseInt(taskdata["livetask"]) },
-            
+            payload: { "name": taskDD.value, "index": 0 },
           });
         });
 
@@ -711,9 +658,7 @@
           console.log(pgtoff.selectedIndex);
           //setLatLng(state.myMarker.getLatLng());
 
-          state.myMarker.setLatLng(pgtakeoffs[pgtoff.selectedIndex]);
-          state.myMarker.setLatLng(pgtakeoffs[pgtoff.selectedIndex]);
-          this.setStartPoint();
+          takeoff.setLatLng(pgtakeoffs[pgtoff.selectedIndex]);
           Map.setView(pgtakeoffs[pgtoff.selectedIndex]["lat"], pgtakeoffs[pgtoff.selectedIndex]["lon"], 14);
         });
 
@@ -933,7 +878,11 @@
                     }).addTo(state.map);
                   }
         */
-
+        WSClient.send({
+          event_name: "GAMESERVER_CLIENT_UPDATE_STATE",
+          to: "others",
+          payload: playerpos,
+        });
       },
 
       updateNearbyClients(clients) {

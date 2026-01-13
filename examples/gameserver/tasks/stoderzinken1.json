@@ -1,7 +1,7 @@
 {
     "name": "stoderzinken1",
 	"creator":"seppp",
-    "description": "Add a short discription of the task, airspaces, weather conditions - will be shown in pre flight briefing\n        ",
+    "description": "Add a short discription of the task, airspaces, weather conditions - will be shown in pre flight briefing",
     "time": 45000,
     "winddir": "N",
 	"aircraft":"Paraglider",
