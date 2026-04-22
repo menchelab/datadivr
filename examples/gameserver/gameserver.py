@@ -508,5 +508,5 @@ if __name__ == "__main__":
         f.close()
     #print(userdb)
 
-    uvicorn.run(app, host="127.0.0.1", port=8765)
+    uvicorn.run(app, host="0.0.0.0", port=8765)
     print("post start")
