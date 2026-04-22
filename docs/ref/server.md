@@ -32,7 +32,9 @@ async def sum_handler(message: WebSocketMessage) -> WebSocketMessage:
 
 # Start the server
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8765)
+    #uvicorn.run(app, host="127.0.0.1", port=8765)
+    uvicorn.run(app, host="https://cloudbase.lab.lbi-netmed.com", port=8765)
+    
 ```
 
 ## Built-in Handlers

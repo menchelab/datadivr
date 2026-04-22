@@ -259,7 +259,7 @@
     <div class="box" style="background:rgba(255, 255, 255, 0.537);">
       <h3 id="airspaceInfo">AIRSPACE INFO</h3>
       <div style="position:absolute ;    z-index: 1999;"><img id="wind"
-          src="http://127.0.0.1:8765/static/images/wind.png"></div>
+          src="https://cloudbase.lab.lbi-netmed.com/static/images/wind.png"></div>
       <div id="map"></div>
     </div>
 
@@ -319,8 +319,8 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet.marker.slideto@0.2.0/Leaflet.Marker.SlideTo.js"></script>
-  <script src="http://127.0.0.1:8765/static/sectors.js"></script>
-  <script src="http://127.0.0.1:8765/static/airspace.js"></script>
+  <script src="https://cloudbase.lab.lbi-netmed.com//static/sectors.js"></script>
+  <script src="https://cloudbase.lab.lbi-netmed.com/static/airspace.js"></script>
   <script>
     var livetrack = true;
     function setState(state){
@@ -766,8 +766,8 @@
 
         var airspacelayer = L.geoJSON(airspaceLines["features"], style1).addTo(state.map);
         const WindsockIcon = L.icon({
-          iconUrl: 'http://127.0.0.1:8765/static/images/Windsack.png',
-          shadowUrl: 'http://127.0.0.1:8765/static/images/plane_shadow.png',
+          iconUrl: 'https://cloudbase.lab.lbi-netmed.com/static/images/Windsack.png',
+          shadowUrl: 'https://cloudbase.lab.lbi-netmed.com/static/images/plane_shadow.png',
           iconSize: [58, 39], // size of the icon
           shadowSize: [64, 64], // size of the shadow
           iconAnchor: [29, 39], // point of the icon which will correspond to marker's location
