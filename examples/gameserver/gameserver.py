@@ -48,6 +48,9 @@ for t in taskfiles:
         thistask = json.load(f)
         if "track" not in thistask:
             thistask["track"] = 'none'
+            thistask["tracks"] = []
+        print(thistask)
+
         taskdata["tasks"].append(thistask)
         f.close()
 
