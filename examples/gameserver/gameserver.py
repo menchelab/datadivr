@@ -34,7 +34,7 @@ if localserver:
     serverWS = "ws://localhost:8765/ws"
 else:
     serverURL = "https://cloudbase.lab.lbi-netmed.com"
-    serverWS = "ws://cloudbase.lab.lbi-netmed.com/ws"
+    serverWS = "wss://cloudbase.lab.lbi-netmed.com/ws"
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
