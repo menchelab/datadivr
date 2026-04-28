@@ -46,6 +46,8 @@ for t in taskfiles:
     with open('examples/gameserver/tasks/'+ t, 'r', encoding='utf-8') as f:
         #global userdb 
         thistask = json.load(f)
+        if "track" not in thistask:
+            thistask["track"] = 'none'
         taskdata["tasks"].append(thistask)
         f.close()
 
