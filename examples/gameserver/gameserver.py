@@ -26,7 +26,10 @@ import os
 
 userdb = {}
 taskdata = {}
-
+#serverURL = "http://127.0.0.1:8765"
+#serverWS = "ws://localhost:8765/ws"
+serverURL = "https://cloudbase.lab.lbi-netmed.com"
+serverWS = "ws://cloudbase.lab.lbi-netmed.com/ws"
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -159,7 +162,7 @@ async def upload( response: Response, file: UploadFile = File(...), myjson: str 
 # HTML ROUTE
 @app.get("/createAccount")
 async def newaccount(request: Request):
-    return templates.TemplateResponse("upload.html", {"request": request})
+    return templates.TemplateResponse("upload.html", {"request": request, "json_data":  {"tasks":taskfiles, "serverURL":serverURL}})
 
 @app.get("/clients")
 async def showclients():
@@ -171,7 +174,7 @@ async def test(request: Request):
     
     print(taskdata["tasks"][1])
     #return templates.TemplateResponse(request=request, name="client.html", context={"name": {"ree":123}, "tex": "reee"})
-    return templates.TemplateResponse("client.html", {"request": request, "json_data":  {"tasks":taskfiles}})
+    return templates.TemplateResponse("client.html", {"request": request, "json_data":  {"tasks":taskfiles, "serverURL":serverURL, "serverWS":serverWS}})
 
 @app.get("/cloudbase1337/{name}/{pw}", response_class=HTMLResponse)
 async def multiplayermap(request: Request, name: str, pw: str):
@@ -179,11 +182,11 @@ async def multiplayermap(request: Request, name: str, pw: str):
     thisuser = searchUser(name,pw)
     print(thisuser)  
     if thisuser is None:
-        return templates.TemplateResponse("login.html", {"request": request})
+        return templates.TemplateResponse("login.html", {"request": request, "json_data":  {"tasks":taskfiles, "serverURL":serverURL}})
     else:
         #return templates.TemplateResponse(request=request, name="client.html", context={"name": thisuser["name"], "tex": thisuser["tex"], "json_data": taskdata})
 
-        return templates.TemplateResponse("client.html", {"request": request, "json_data": {"tasks":taskfiles, "user":thisuser, "livetask":5}})
+        return templates.TemplateResponse("client.html", {"request": request, "json_data": {"tasks":taskfiles, "user":thisuser, "livetask":5, "serverURL":serverURL, "serverWS":serverWS}})
     #return templates.TemplateResponse(request=request)
 
 
@@ -507,6 +510,6 @@ if __name__ == "__main__":
         userdb = json.load(f)
         f.close()
     #print(userdb)
-
-    uvicorn.run(app, host="0.0.0.0", port=8765)
+    uvicorn.run(app, host="127.0.0.1", port=8765)
+    #uvicorn.run(app, host="0.0.0.0", port=8765)
     print("post start")

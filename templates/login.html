@@ -1,5 +1,10 @@
 <script type="text/javascript">
 
+    let tdata = "{{ json_data }}";
+    var re = new RegExp('&#39;', 'g');
+    var decoded = tdata.replace(re, '"');
+    var taskdata = JSON.parse(decoded);
+    console.log(taskdata["serverURL"]);
 
     "object" != typeof ue || "object" != typeof ue.interface ? ("object" != typeof ue && (ue = {}), ue.interface = {}, ue.interface.broadcast = function (e, t) {
         if ("string" == typeof e) {
@@ -38,7 +43,7 @@
                 if (data.message === "CORRECT") {
                      console.log(data.data)
                      //ue4("login", data.data)
-                     window.location.href ="https://cloudbase.lab.lbi-netmed.com/cloudbase1337/"+data.data.name+"/"+data.data.pw;
+                     window.location.href ="{{json_data.serverURL}}/cloudbase1337/"+data.data.name+"/"+data.data.pw;
                        
                 }
             })
@@ -48,7 +53,7 @@
     }
 
     function createAccount() {
-        window.location.href ="https://cloudbase.lab.lbi-netmed.com/createAccount";
+        window.location.href ="{{json_data.serverURL}}/createAccount";
     }
 
 </script>
