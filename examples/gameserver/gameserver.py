@@ -26,10 +26,15 @@ import os
 
 userdb = {}
 taskdata = {}
-#serverURL = "http://127.0.0.1:8765"
-#serverWS = "ws://localhost:8765/ws"
-serverURL = "https://cloudbase.lab.lbi-netmed.com"
-serverWS = "ws://cloudbase.lab.lbi-netmed.com/ws"
+serverURL = ""
+serverWS = ""
+localserver = False
+if localserver:
+    serverURL = "http://127.0.0.1:8765"
+    serverWS = "ws://localhost:8765/ws"
+else:
+    serverURL = "https://cloudbase.lab.lbi-netmed.com"
+    serverWS = "ws://cloudbase.lab.lbi-netmed.com/ws"
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -510,6 +515,8 @@ if __name__ == "__main__":
         userdb = json.load(f)
         f.close()
     #print(userdb)
-    uvicorn.run(app, host="127.0.0.1", port=8765)
-    #uvicorn.run(app, host="0.0.0.0", port=8765)
+    if localserver:
+        uvicorn.run(app, host="127.0.0.1", port=8765)
+    else:
+        uvicorn.run(app, host="0.0.0.0", port=8765)
     print("post start")
