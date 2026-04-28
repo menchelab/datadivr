@@ -8,6 +8,9 @@
     "tofflat": 47.462352314798672,
     "tofflon": 13.297297341940451,
     "tracks": [],
+    "cloudtresh": "0.5",
+    "turbulence": "0.5",
+    "track": "none",
     "cylinder": [
         {
             "lat": 47.461035064000974,
@@ -204,7 +207,8 @@
             "p5y": "191",
             "p6x": "400",
             "p6y": "228"
-        },
-"cloudtresh":"0.5","turbulence":"0.5","track":"none"
+        }
+
     ]
+
 }
