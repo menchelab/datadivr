@@ -48,6 +48,7 @@ for t in taskfiles:
         thistask = json.load(f)
         if "track" not in thistask:
             thistask["track"] = 'none'
+        if "tracks" not in thistask:
             thistask["tracks"] = []
         print(thistask)
 
@@ -513,6 +514,17 @@ if __name__ == "__main__":
     import uvicorn
     #global userdb
 
+
+    # debug open /storage, list all files, print
+    persistantFiles = os.listdir("/storage")
+    print("not found")
+    if "users.json" not in persistantFiles:
+        print("not found")
+        with open('data.json', 'w') as f:
+            data = {"users":[]}
+            json.dump(data, f)
+
+    # check if /storage/users.json exist, if not create with default
 
 
     with open('examples/gameserver/users.json', 'r', encoding='utf-8') as f:
