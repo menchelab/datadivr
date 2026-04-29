@@ -520,7 +520,7 @@ if __name__ == "__main__":
     print(persistantFiles)
     if "users.json" not in persistantFiles:
         print("not found")
-        with open('users.json', 'w') as f:
+        with open('/storage/users.json', 'w') as f:
             data = {"users":[]}
             json.dump(data, f)
 
