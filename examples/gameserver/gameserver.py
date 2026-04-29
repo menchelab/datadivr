@@ -35,6 +35,7 @@ if localserver:
 else:
     serverURL = "https://cloudbase.lab.lbi-netmed.com"
     serverWS = "wss://cloudbase.lab.lbi-netmed.com/ws"
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -514,9 +515,10 @@ if __name__ == "__main__":
     import uvicorn
     #global userdb
 
-
+    storage_path = os.getenv("PERSISTANT_PATH", "/static/userskins")
+    print("we use:", storage_path)
     # debug open /storage, list all files, print
-    persistantFiles = os.listdir("/storage")
+    persistantFiles = os.listdir(storage_path)
     print(persistantFiles)
     if "users.json" not in persistantFiles:
         print("not found")
