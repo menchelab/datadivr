@@ -515,14 +515,14 @@ if __name__ == "__main__":
     import uvicorn
     #global userdb
 
-    storage_path = os.getenv("PERSISTANT_PATH", "/static/userskins")
+    storage_path = os.getenv("PERSISTANT_PATH", "/static/userskins/")
     print("we use:", storage_path)
     # debug open /storage, list all files, print
     persistantFiles = os.listdir(storage_path)
     print(persistantFiles)
     if "users.json" not in persistantFiles:
         print("not found")
-        with open('/storage/users.json', 'w') as f:
+        with open(storage_path + 'users.json', 'w') as f:
             data = {"users":[]}
             json.dump(data, f)
 
