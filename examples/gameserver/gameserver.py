@@ -40,7 +40,7 @@ print("we use:", storage_path)
 if localserver:
     userskin_path = "userskins"
 else:
-    userskin_path = storage_path + "/skins"
+    userskin_path = storage_path + "/userskins"
 
 # debug open /storage, list all files, print
 persistantFiles = os.listdir(storage_path)
@@ -68,7 +68,7 @@ else:
     serverWS = "wss://cloudbase.lab.lbi-netmed.com/ws"
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/userskins", StaticFiles(directory=userskin_path), name="skins")
+app.mount("/userskins", StaticFiles(directory=userskin_path), name="userskins")
 templates = Jinja2Templates(directory="templates")
 
 task_dir = os.path.join(os.path.dirname(__file__),  'tasks')
