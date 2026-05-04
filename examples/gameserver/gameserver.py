@@ -31,6 +31,7 @@ serverWS = ""
 localserver = True
 
 storage_path = os.getenv("PERSISTANT_PATH", "examples/gameserver/tasks/")
+userskin_path = storage_path + "/skins"
 if storage_path != "examples/gameserver/tasks/":
     localserver = False
 print("we use:", storage_path)
@@ -42,6 +43,14 @@ if "users.json" not in persistantFiles:
     with open(storage_path + 'users.json', 'w') as f:
         data = {"users":[]}
         json.dump(data, f)
+
+if os.path.isdir(userskin_path):
+    print("Exists")
+else:
+    print("Skins Doesn't exists")
+    os.mkdir(userskin_path)
+
+
 
 
 if localserver:
