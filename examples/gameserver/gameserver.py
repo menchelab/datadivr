@@ -31,10 +31,17 @@ serverWS = ""
 localserver = True
 
 storage_path = os.getenv("PERSISTANT_PATH", "examples/gameserver/tasks/")
-userskin_path = storage_path + "/skins"
+userskin_path = ""
+
 if storage_path != "examples/gameserver/tasks/":
     localserver = False
 print("we use:", storage_path)
+
+if localserver:
+    userskin_path = "userskins"
+else:
+    userskin_path = storage_path + "/skins"
+
 # debug open /storage, list all files, print
 persistantFiles = os.listdir(storage_path)
 print(persistantFiles)
@@ -61,7 +68,7 @@ else:
     serverWS = "wss://cloudbase.lab.lbi-netmed.com/ws"
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/userskins", StaticFiles(directory="userskins"), name="skins")
+app.mount("/userskins", StaticFiles(directory=userskin_path), name="skins")
 templates = Jinja2Templates(directory="templates")
 
 task_dir = os.path.join(os.path.dirname(__file__),  'tasks')
@@ -183,7 +190,7 @@ async def upload( response: Response, file: UploadFile = File(...), myjson: str 
         try:
             contents = file.file.read()
             #print(file.name)
-            with open("userskins/" + file.filename, "wb") as f:
+            with open(userskin_path + "/" + file.filename, "wb") as f:
                 f.write(contents)
 
         except Exception:
