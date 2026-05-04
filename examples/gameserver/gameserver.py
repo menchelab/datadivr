@@ -66,7 +66,7 @@ else:
 
     #os.mkdir(tasks_path)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-source_tasks = os.path.join(BASE_DIR, "examples", "gameserver", "tasks")
+source_tasks = os.path.join(BASE_DIR, "tasks")
 if not os.path.exists(tasks_path) or not os.listdir(tasks_path):
     print("tasks missing or empty → copying files")
     os.makedirs(tasks_path, exist_ok=True)
