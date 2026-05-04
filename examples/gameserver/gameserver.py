@@ -40,7 +40,7 @@ print("we use:", storage_path)
 if localserver:
     userskin_path = "userskins"
 else:
-    userskin_path = storage_path + "/userskins"
+    userskin_path = os.path.join(storage_path, "userskins")
 
 # debug open /storage, list all files, print
 persistantFiles = os.listdir(storage_path)
@@ -57,7 +57,9 @@ else:
     print("Skins Doesn't exists")
     os.mkdir(userskin_path)
 
-
+print("Serving userskins from:", userskin_path)
+print("Absolute path:", os.path.abspath(userskin_path))
+print("Files:", os.listdir(userskin_path))
 
 
 if localserver:
