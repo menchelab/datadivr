@@ -28,7 +28,22 @@ userdb = {}
 taskdata = {}
 serverURL = ""
 serverWS = ""
-localserver = False
+localserver = True
+
+storage_path = os.getenv("PERSISTANT_PATH", "examples/gameserver/tasks/")
+if storage_path != "examples/gameserver/tasks/":
+    localserver = False
+print("we use:", storage_path)
+# debug open /storage, list all files, print
+persistantFiles = os.listdir(storage_path)
+print(persistantFiles)
+if "users.json" not in persistantFiles:
+    print("not found")
+    with open(storage_path + 'users.json', 'w') as f:
+        data = {"users":[]}
+        json.dump(data, f)
+
+
 if localserver:
     serverURL = "http://127.0.0.1:8765"
     serverWS = "ws://localhost:8765/ws"
@@ -37,6 +52,7 @@ else:
     serverWS = "wss://cloudbase.lab.lbi-netmed.com/ws"
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/userskins", StaticFiles(directory="userskins"), name="skins")
 templates = Jinja2Templates(directory="templates")
 
 task_dir = os.path.join(os.path.dirname(__file__),  'tasks')
@@ -158,7 +174,7 @@ async def upload( response: Response, file: UploadFile = File(...), myjson: str 
         try:
             contents = file.file.read()
             #print(file.name)
-            with open("static/userskins/" + file.filename, "wb") as f:
+            with open("userskins/" + file.filename, "wb") as f:
                 f.write(contents)
 
         except Exception:
@@ -515,16 +531,7 @@ if __name__ == "__main__":
     import uvicorn
     #global userdb
 
-    storage_path = os.getenv("PERSISTANT_PATH", "/static/userskins/")
-    print("we use:", storage_path)
-    # debug open /storage, list all files, print
-    persistantFiles = os.listdir(storage_path)
-    print(persistantFiles)
-    if "users.json" not in persistantFiles:
-        print("not found")
-        with open(storage_path + 'users.json', 'w') as f:
-            data = {"users":[]}
-            json.dump(data, f)
+
 
     # check if /storage/users.json exist, if not create with default
 
