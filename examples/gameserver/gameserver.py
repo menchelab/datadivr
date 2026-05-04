@@ -68,7 +68,7 @@ if os.path.isdir(tasks_path):
 else:
     print("tasks Doesn't exists...copying files")
     os.mkdir(tasks_path)
-    shutil.copytree("/examples/gameserver/tasks", tasks_path, dirs_exist_ok=True)
+    shutil.copytree("examples/gameserver/tasks", tasks_path, dirs_exist_ok=True)
     print(os.listdir(tasks_path))
 
 
