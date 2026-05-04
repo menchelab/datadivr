@@ -13,6 +13,7 @@ from fastapi import  Request
 import json
 import string
 import random
+import shutil
 from fastapi import File, Form, UploadFile, Request, FastAPI, HTTPException
 from os import listdir
 
@@ -30,10 +31,12 @@ serverURL = ""
 serverWS = ""
 localserver = True
 
-storage_path = os.getenv("PERSISTANT_PATH", "examples/gameserver/tasks/")
+storage_path = os.getenv("PERSISTANT_PATH", "examples/gameserver/")
 userskin_path = ""
+tasks_path = ""
+tracks_path = ""
 
-if storage_path != "examples/gameserver/tasks/":
+if storage_path != "examples/gameserver/":
     localserver = False
 print("we use:", storage_path)
 
@@ -41,6 +44,9 @@ if localserver:
     userskin_path = "userskins"
 else:
     userskin_path = os.path.join(storage_path, "userskins")
+
+tasks_path =  os.path.join(storage_path,  'tasks') 
+tracks_path = os.path.join(storage_path,  'tracks') 
 
 # debug open /storage, list all files, print
 persistantFiles = os.listdir(storage_path)
@@ -56,6 +62,21 @@ if os.path.isdir(userskin_path):
 else:
     print("Skins Doesn't exists")
     os.mkdir(userskin_path)
+
+if os.path.isdir(tasks_path):
+    print(os.listdir(tasks_path))
+else:
+    print("tasks Doesn't exists...copying files")
+    os.mkdir(tasks_path)
+    shutil.copytree("/examples/gameserver/tasks", tasks_path, dirs_exist_ok=True)
+    print(os.listdir(tasks_path))
+
+
+if os.path.isdir(tracks_path):
+    print(os.listdir(tracks_path))
+else:
+    print("tasks Doesn't exists")
+    os.mkdir(tracks_path)
 
 print("Serving userskins from:", userskin_path)
 print("Absolute path:", os.path.abspath(userskin_path))
