@@ -63,15 +63,22 @@ else:
     print("Skins Doesn't exists")
     os.mkdir(userskin_path)
 
-if os.path.isdir(tasks_path):
-    print(os.listdir(tasks_path))
-else:
-    print("tasks Doesn't exists...copying files")
+
     #os.mkdir(tasks_path)
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    source_tasks = os.path.join(BASE_DIR, "examples", "gameserver", "tasks")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+source_tasks = os.path.join(BASE_DIR, "examples", "gameserver", "tasks")
+if not os.path.exists(tasks_path) or not os.listdir(tasks_path):
+    print("tasks missing or empty → copying files")
+    os.makedirs(tasks_path, exist_ok=True)
     shutil.copytree(source_tasks, tasks_path, dirs_exist_ok=True)
-     
+    print("after copy:", os.listdir(tasks_path))
+else:
+    print("tasks already exist:", os.listdir(tasks_path))
+
+print("SOURCE:", source_tasks)
+print("SOURCE EXISTS:", os.path.exists(source_tasks))
+print("DEST:", tasks_path)
+
 
 if os.path.isdir(tracks_path):
     print(os.listdir(tracks_path))
