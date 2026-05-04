@@ -52,7 +52,7 @@ if "users.json" not in persistantFiles:
         json.dump(data, f)
 
 if os.path.isdir(userskin_path):
-    print("Exists")
+    print(os.listdir(userskin_path))
 else:
     print("Skins Doesn't exists")
     os.mkdir(userskin_path)
@@ -192,6 +192,7 @@ async def upload( response: Response, file: UploadFile = File(...), myjson: str 
             #print(file.name)
             with open(userskin_path + "/" + file.filename, "wb") as f:
                 f.write(contents)
+                print("write file")
 
         except Exception:
             raise HTTPException(status_code=500, detail='Something went wrong')
