@@ -460,7 +460,7 @@ async def gpstrack_handler(message: WebSocketMessage) -> None:
     filename = message.payload["taskname"] + '_' + message.payload["name"] + '_' + message.from_id[:5]+ '_' + str(message.payload["rtime"])
     print(filename)
     
-    with open( tracks_path + filename +'.json', 'w', encoding='utf-8') as f:
+    with open( tracks_path +'/' + filename +'.json', 'w', encoding='utf-8') as f:
         json.dump(message.payload,f)
     f.close()
 
@@ -538,13 +538,13 @@ async def set_task_handler(message: WebSocketMessage) -> None:
         index = message.payload.get("index", "")
         track_dir = os.path.join(os.path.dirname(__file__),  'tracks')
         trackfiles = os.listdir(track_dir)
-        print(trackfiles)
+        #print(trackfiles)
         tname = taskdata["tasks"][index]["name"]
         matchingtracks = []
         for tr in trackfiles:
             name = tr.split("_")
             if name[0] == tname:
-                with open(tracks_path + tr, 'r', encoding='utf-8') as f:
+                with open(tracks_path +'/' + tr, 'r', encoding='utf-8') as f:
         #global userdb 
                     thistr = json.load(f)
                     matchingtracks.append(thistr)
