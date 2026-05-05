@@ -122,18 +122,29 @@ for t in taskfiles:
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
-def searchUser (name,pw):
+def load_userdb():
+    import os, json
+    users_file = os.path.join(storage_path, "users.json")
+    try:
+        with open(users_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return {"users": []}
+
+
+def searchUser(name, pw):
+    userdb = load_userdb()
     for user in userdb["users"]:
-        if user["name"] == name:
-            if user["pw"] == pw:
-                return user
+        if user["name"] == name and user["pw"] == pw:
+            return user
     return None
 
-def getUser (name):
+def getUser(name):
+    userdb = load_userdb()
     for user in userdb["users"]:
-        if user["name"] == name:   
+        if user["name"] == name:
             return user
-    return None 
+    return None
 
 
 
@@ -176,6 +187,37 @@ def is_within_range(lat1: float, lon1: float, lat2: float, lon2: float, max_rang
 
 @app.post("/pw")
 async def check_pw(request: Request, response: Response):
+    import os
+    import json
+
+    users_file = os.path.join(storage_path, "users.json")
+    print("USERS FILE:", users_file)
+    # 🔁 reload user database
+    try:
+        with open(users_file, "r", encoding="utf-8") as f:
+            userdb = json.load(f)
+    except Exception:
+        return {"message": "USER DATABASE ERROR"}
+
+    thisuser = await request.json()
+    name = thisuser.get("name")
+    pw = thisuser.get("pw")
+
+    print("LOGIN REQUEST:", name)
+    print("CURRENT USERS:", [u["name"] for u in userdb["users"]])
+
+    # 🔍 check user
+    for user in userdb["users"]:
+        if user["name"] == name:
+            if user["pw"] == pw:
+                return {"message": "CORRECT", "data": thisuser}
+            else:
+                return {"message": "WRONG PW"}
+
+    return {"message": f"NO USER CALLED {name}"}
+'''
+@app.post("/pw")
+async def check_pw(request: Request, response: Response):
     thisuser = await request.json()
     name = thisuser["name"]
     pw = thisuser["pw"]
@@ -200,6 +242,8 @@ async def check_pw(request: Request, response: Response):
 
 @app.post("/upload")
 async def upload( response: Response, file: UploadFile = File(...), myjson: str = Form(...)):
+
+
 
     thisuser = json.loads(myjson)
     print(thisuser["name"])
@@ -235,6 +279,71 @@ async def upload( response: Response, file: UploadFile = File(...), myjson: str 
                 f.close()
 
         return {"message": f"Welcome {name} ! your Password is {pw}"}
+'''
+
+@app.post("/upload")
+async def upload(
+    response: Response,
+    file: UploadFile = File(...),
+    myjson: str = Form(...)
+):
+    import os
+    import json
+
+    users_file = os.path.join(storage_path, "users.json")
+    print("USERS FILE:", users_file)
+    # 🔁 ALWAYS reload user database from disk
+    try:
+        with open(users_file, "r", encoding="utf-8") as f:
+            userdb = json.load(f)
+    except Exception:
+        userdb = {"users": []}
+
+    # 📦 parse incoming user data
+    thisuser = json.loads(myjson)
+    username = thisuser.get("name")
+
+    if not username:
+        raise HTTPException(status_code=400, detail="Missing username")
+
+    print("NEW USER REQUEST:", username)
+    print("CURRENT USERS:", [u["name"] for u in userdb["users"]])
+
+    # 🚫 check if user already exists (clean + early return)
+    if any(u["name"] == username for u in userdb["users"]):
+        return {"message": "user exists"}
+
+    # ✅ create new user
+    thisuser["pw"] = id_generator()
+    thisuser["tex"] = file.filename
+
+    userdb["users"].append(thisuser)
+
+    # 💾 save uploaded file
+    try:
+        os.makedirs(userskin_path, exist_ok=True)
+
+        file_path = os.path.join(userskin_path, file.filename)
+
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+
+        print("Saved file:", file_path)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+
+    # 💾 write updated users.json back to disk
+    try:
+        with open(users_file, "w", encoding="utf-8") as f:
+            json.dump(userdb, f, indent=2)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save user: {str(e)}")
+
+    return {
+        "message": f"Welcome {username}! your Password is {thisuser['pw']}"
+    }
+
 # HTML ROUTE
 @app.get("/createAccount")
 async def newaccount(request: Request):
@@ -242,15 +351,14 @@ async def newaccount(request: Request):
 
 @app.get("/clients")
 async def showclients():
-    print("clients:", clients)
-    #return json.dumps(clients)
+    #print("clients:", clients)
+    return json.dumps(clients)
 
 @app.get("/test")
 async def test(request: Request):
-    
-    print(taskdata["tasks"][1])
+    return userdb
     #return templates.TemplateResponse(request=request, name="client.html", context={"name": {"ree":123}, "tex": "reee"})
-    return templates.TemplateResponse("client.html", {"request": request, "json_data":  {"tasks":taskfiles, "serverURL":serverURL, "serverWS":serverWS}})
+    #return templates.TemplateResponse("client.html", {"request": request, "json_data":  {"tasks":taskfiles, "serverURL":serverURL, "serverWS":serverWS}})
 
 @app.get("/cloudbase1337/{name}/{pw}", response_class=HTMLResponse)
 async def multiplayermap(request: Request, name: str, pw: str):
