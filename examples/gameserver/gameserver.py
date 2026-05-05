@@ -536,8 +536,8 @@ async def set_tasklist_handler(message: WebSocketMessage) -> None:
 async def set_task_handler(message: WebSocketMessage) -> None:
     try:
         index = message.payload.get("index", "")
-        track_dir = os.path.join(os.path.dirname(__file__),  'tracks')
-        trackfiles = os.listdir(track_dir)
+        #track_dir = os.path.join(os.path.dirname(__file__),  'tracks')
+        trackfiles = os.listdir(tracks_path)
         #print(trackfiles)
         tname = taskdata["tasks"][index]["name"]
         matchingtracks = []
