@@ -102,19 +102,19 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/userskins", StaticFiles(directory=userskin_path), name="userskins")
 templates = Jinja2Templates(directory="templates")
 
-task_dir = os.path.join(os.path.dirname(__file__),  'tasks')
-taskfiles = os.listdir(task_dir)
+#task_dir = os.path.join(os.path.dirname(__file__),  'tasks')
+taskfiles = os.listdir(tasks_path)
 taskdata = {"tasks":[]}
 
 for t in taskfiles:
-    with open('examples/gameserver/tasks/'+ t, 'r', encoding='utf-8') as f:
+    with open(tasks_path + t, 'r', encoding='utf-8') as f:
         #global userdb 
         thistask = json.load(f)
         if "track" not in thistask:
             thistask["track"] = 'none'
         if "tracks" not in thistask:
             thistask["tracks"] = []
-        print(thistask)
+        #print(thistask)
 
         taskdata["tasks"].append(thistask)
         f.close()
@@ -229,7 +229,7 @@ async def upload( response: Response, file: UploadFile = File(...), myjson: str 
             raise HTTPException(status_code=500, detail='Something went wrong')
         finally:
             file.file.close()
-            with open('examples/gameserver/users.json', 'w', encoding='utf-8') as f:
+            with open(storage_path + 'users.json', 'w', encoding='utf-8') as f:
         #global userdb 
                 json.dump(userdb,f)
                 f.close()
@@ -460,7 +460,7 @@ async def gpstrack_handler(message: WebSocketMessage) -> None:
     filename = message.payload["taskname"] + '_' + message.payload["name"] + '_' + message.from_id[:5]+ '_' + str(message.payload["rtime"])
     print(filename)
     
-    with open('examples/gameserver/tracks/'+ filename +'.json', 'w', encoding='utf-8') as f:
+    with open( tracks_path + filename +'.json', 'w', encoding='utf-8') as f:
         json.dump(message.payload,f)
     f.close()
 
@@ -544,7 +544,7 @@ async def set_task_handler(message: WebSocketMessage) -> None:
         for tr in trackfiles:
             name = tr.split("_")
             if name[0] == tname:
-                with open('examples/gameserver/tracks/'+tr, 'r', encoding='utf-8') as f:
+                with open(tracks_path + tr, 'r', encoding='utf-8') as f:
         #global userdb 
                     thistr = json.load(f)
                     matchingtracks.append(thistr)
@@ -584,7 +584,7 @@ if __name__ == "__main__":
     # check if /storage/users.json exist, if not create with default
 
 
-    with open('examples/gameserver/users.json', 'r', encoding='utf-8') as f:
+    with open(storage_path + 'users.json', 'r', encoding='utf-8') as f:
         #global userdb 
         userdb = json.load(f)
         f.close()
