@@ -107,7 +107,7 @@ taskfiles = os.listdir(tasks_path)
 taskdata = {"tasks":[]}
 
 for t in taskfiles:
-    with open(tasks_path + t, 'r', encoding='utf-8') as f:
+    with open(tasks_path +'/' + t, 'r', encoding='utf-8') as f:
         #global userdb 
         thistask = json.load(f)
         if "track" not in thistask:
