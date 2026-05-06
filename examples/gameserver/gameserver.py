@@ -151,7 +151,20 @@ def getUser(name):
     return None
 
 
+def reload_tasks():
+    global taskdata
+    taskdata = {"tasks":[]}
 
+    for t in os.listdir(tasks_path):
+        with open(os.path.join(tasks_path, t), 'r', encoding='utf-8') as f:
+            thistask = json.load(f)
+
+            if "track" not in thistask:
+                thistask["track"] = 'none'
+            if "tracks" not in thistask:
+                thistask["tracks"] = []
+
+            taskdata["tasks"].append(thistask)
 
 
 # example messages
@@ -221,16 +234,65 @@ async def check_pw(request: Request, response: Response):
     return {"message": f"NO USER CALLED {name}"}
 
 
-@app.get("/admin")
-async def admin_panel(token: str = ""):
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_panel(request: Request, token: str = ""):
     if token != ADMIN_TOKEN:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    return {
-        "message": "Admin access granted",
-        "tasks": os.listdir(tasks_path)
-    }
+    files = os.listdir(tasks_path)
 
+    html = f"""
+    <html>
+    <head>
+        <title>Admin Panel</title>
+        <style>
+            body {{ font-family: Arial; padding: 20px; }}
+            .task {{ margin-bottom: 10px; }}
+            button {{ margin-left: 10px; }}
+        </style>
+    </head>
+    <body>
+        <h1>Admin Panel</h1>
+
+        <h2>Upload Task</h2>
+        <form action="/admin/upload_task?token={token}" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".json" required>
+            <button type="submit">Upload</button>
+        </form>
+
+        <h2>Existing Tasks</h2>
+    """
+
+    for f in files:
+        html += f"""
+        <div class="task">
+            {f}
+            <form style="display:inline;" action="/admin/delete_task?token={token}" method="post">
+                <input type="hidden" name="filename" value="{f}">
+                <button type="submit">Delete</button>
+            </form>
+        </div>
+        """
+
+    html += """
+    </body>
+    </html>
+    """
+
+    return HTMLResponse(content=html)
+@app.post("/admin/delete_task")
+async def delete_task(filename: str = Form(...), token: str = ""):
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    file_path = os.path.join(tasks_path, filename)
+
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    os.remove(file_path)
+    reload_tasks()
+    return {"message": f"{filename} deleted"}
 
 ### ADMIN
 @app.post("/admin/delete_tasks")
@@ -246,13 +308,35 @@ async def delete_tasks(token: str = ""):
         if os.path.isfile(path):
             os.remove(path)
             deleted.append(f)
-
+    reload_tasks()
     return {
         "message": "All task files deleted",
         "deleted": deleted
     }
 
+@app.post("/admin/upload_task")
+async def upload_task(file: UploadFile = File(...), token: str = ""):
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
+    if not file.filename.endswith(".json"):
+        raise HTTPException(status_code=400, detail="Only JSON files allowed")
+
+    file_path = os.path.join(tasks_path, file.filename)
+
+    try:
+        content = await file.read()
+
+        # validate JSON
+        json.loads(content)
+
+        with open(file_path, "wb") as f:
+            f.write(content)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    reload_tasks()
+    return {"message": f"{file.filename} uploaded"}
 
 @app.post("/pw")
 async def check_pw(request: Request, response: Response):
