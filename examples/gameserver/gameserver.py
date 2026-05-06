@@ -15,6 +15,7 @@ import string
 import random
 import shutil
 from fastapi import File, Form, UploadFile, Request, FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from os import listdir
 
 # Initialize logging first, before getting the logger
@@ -202,6 +203,22 @@ def is_within_range(lat1: float, lon1: float, lat2: float, lon2: float, max_rang
     return distance <= max_range_km
 
 
+@app.get("/admin/download_users")
+async def download_users(token: str = ""):
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    file_path = os.path.join(storage_path, "users.json")
+
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="users.json not found")
+
+    return FileResponse(
+        path=file_path,
+        filename="users.json",
+        media_type="application/json"
+    )
+
 @app.post("/pw")
 async def check_pw(request: Request, response: Response):
     import os
@@ -253,7 +270,9 @@ async def admin_panel(request: Request, token: str = ""):
     </head>
     <body>
         <h1>Admin Panel</h1>
+        <h2>User Data</h2>
 
+        <button onclick="downloadUsers()">Download users.json</button>
         <h2>Upload Task</h2>
         <form action="/admin/upload_task?token={token}" method="post" enctype="multipart/form-data">
             <input type="file" name="file" accept=".json" required>
@@ -274,8 +293,22 @@ async def admin_panel(request: Request, token: str = ""):
         </div>
         """
 
-    html += """
+    html +=f"""
     </body>
+    <script>
+        const TOKEN = "{token}";
+
+        function downloadUsers() {{
+            const url = `/admin/download_users?token=${{TOKEN}}`;
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "users.json";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }}
+    </script>
     </html>
     """
 
@@ -337,7 +370,7 @@ async def upload_task(file: UploadFile = File(...), token: str = ""):
         raise HTTPException(status_code=500, detail=str(e))
     reload_tasks()
     return {"message": f"{file.filename} uploaded"}
-
+'''
 @app.post("/pw")
 async def check_pw(request: Request, response: Response):
     thisuser = await request.json()
@@ -359,7 +392,7 @@ async def check_pw(request: Request, response: Response):
                 return {"message": f"WRONG PW"}
     if not found:
         return {"message": f"NO USER Called {name}"}
-   
+'''   
       
 
 @app.post("/upload")
