@@ -26,8 +26,9 @@ logger = get_logger(__name__)
 
 import os
 
+global taskdata
+taskdata = {"tasks":[]}
 userdb = {}
-taskdata = {}
 serverURL = ""
 serverWS = ""
 localserver = True
@@ -109,8 +110,8 @@ templates = Jinja2Templates(directory="templates")
 
 #task_dir = os.path.join(os.path.dirname(__file__),  'tasks')
 taskfiles = os.listdir(tasks_path)
-taskdata = {"tasks":[]}
 
+'''
 for t in taskfiles:
     with open(tasks_path +'/' + t, 'r', encoding='utf-8') as f:
         #global userdb 
@@ -123,7 +124,7 @@ for t in taskfiles:
 
         taskdata["tasks"].append(thistask)
         f.close()
-
+'''
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
@@ -153,9 +154,8 @@ def getUser(name):
 
 
 def reload_tasks():
-    global taskdata
-    taskdata = {"tasks":[]}
-
+    taskdata["tasks"] = []
+    
     for t in os.listdir(tasks_path):
         with open(os.path.join(tasks_path, t), 'r', encoding='utf-8') as f:
             thistask = json.load(f)
@@ -166,7 +166,7 @@ def reload_tasks():
                 thistask["tracks"] = []
 
             taskdata["tasks"].append(thistask)
-
+     
 
 # example messages
 # {"event_name": "GAMESERVER_SET_NAME", "to": "others", "payload": {"name": "CLI" } }
@@ -327,25 +327,7 @@ async def delete_task(filename: str = Form(...), token: str = ""):
     reload_tasks()
     return {"message": f"{filename} deleted"}
 
-### ADMIN
-@app.post("/admin/delete_tasks")
-async def delete_tasks(token: str = ""):
-    if token != ADMIN_TOKEN:
-        raise HTTPException(status_code=401, detail="Unauthorized")
 
-    deleted = []
-
-    for f in os.listdir(tasks_path):
-        path = os.path.join(tasks_path, f)
-
-        if os.path.isfile(path):
-            os.remove(path)
-            deleted.append(f)
-    reload_tasks()
-    return {
-        "message": "All task files deleted",
-        "deleted": deleted
-    }
 
 @app.post("/admin/upload_task")
 async def upload_task(file: UploadFile = File(...), token: str = ""):
@@ -394,7 +376,7 @@ async def check_pw(request: Request, response: Response):
         return {"message": f"NO USER Called {name}"}
 '''   
       
-
+'''
 @app.post("/upload")
 async def upload( response: Response, file: UploadFile = File(...), myjson: str = Form(...)):
 
@@ -435,7 +417,7 @@ async def upload( response: Response, file: UploadFile = File(...), myjson: str 
 
         return {"message": f"Welcome {name} ! your Password is {pw}"}
 
-
+'''
 @app.post("/upload")
 async def upload(
     response: Response,
@@ -524,7 +506,7 @@ async def multiplayermap(request: Request, name: str, pw: str):
         return templates.TemplateResponse("login.html", {"request": request, "json_data":  {"tasks":taskfiles, "serverURL":serverURL}})
     else:
         #return templates.TemplateResponse(request=request, name="client.html", context={"name": thisuser["name"], "tex": thisuser["tex"], "json_data": taskdata})
-
+        taskfiles = os.listdir(tasks_path)
         return templates.TemplateResponse("client.html", {"request": request, "json_data": {"tasks":taskfiles, "user":thisuser, "livetask":5, "serverURL":serverURL, "serverWS":serverWS}})
     #return templates.TemplateResponse(request=request)
 
@@ -842,6 +824,7 @@ if __name__ == "__main__":
     import uvicorn
     #global userdb
 
+    #reload_tasks()
 
 
     # check if /storage/users.json exist, if not create with default
