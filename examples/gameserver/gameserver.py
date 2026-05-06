@@ -32,6 +32,10 @@ serverWS = ""
 localserver = True
 
 storage_path = os.getenv("PERSISTANT_PATH", "examples/gameserver/")
+
+### ADMIN
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "supersecret123")
+
 userskin_path = ""
 tasks_path = ""
 tracks_path = ""
@@ -215,7 +219,41 @@ async def check_pw(request: Request, response: Response):
                 return {"message": "WRONG PW"}
 
     return {"message": f"NO USER CALLED {name}"}
-'''
+
+
+@app.get("/admin")
+async def admin_panel(token: str = ""):
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    return {
+        "message": "Admin access granted",
+        "tasks": os.listdir(tasks_path)
+    }
+
+
+### ADMIN
+@app.post("/admin/delete_tasks")
+async def delete_tasks(token: str = ""):
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    deleted = []
+
+    for f in os.listdir(tasks_path):
+        path = os.path.join(tasks_path, f)
+
+        if os.path.isfile(path):
+            os.remove(path)
+            deleted.append(f)
+
+    return {
+        "message": "All task files deleted",
+        "deleted": deleted
+    }
+
+
+
 @app.post("/pw")
 async def check_pw(request: Request, response: Response):
     thisuser = await request.json()
@@ -279,7 +317,7 @@ async def upload( response: Response, file: UploadFile = File(...), myjson: str 
                 f.close()
 
         return {"message": f"Welcome {name} ! your Password is {pw}"}
-'''
+
 
 @app.post("/upload")
 async def upload(
