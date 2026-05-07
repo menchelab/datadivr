@@ -36,7 +36,7 @@
         status.innerText = "Sending...";
 
         try {
-            const response = await fetch('http://127.0.0.1:8765/send-password', {
+            const response = await fetch('{{json_data.serverURL}}/send-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

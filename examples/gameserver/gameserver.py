@@ -262,7 +262,7 @@ async def send_password_email(user: EmailSchema, background_tasks: FABackgroundT
 
 @app.get("/forgot")
 async def newaccount(request: Request):
-    return templates.TemplateResponse("resetPW.html", {"request": request})
+    return templates.TemplateResponse("resetPW.html", {"request": request,  "json_data":  {"tasks":taskfiles, "serverURL":serverURL}})
 
 
 
