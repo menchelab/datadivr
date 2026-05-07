@@ -14,6 +14,7 @@
 
 <div class="container">
     <h3>Send Password Reset</h3>
+    <input type="name" id="nameInput" placeholder="Enter your username" required>
     <input type="email" id="emailInput" placeholder="Enter your email" required>
     <button id="sendBtn">Send Email</button>
     <p id="status"></p>
@@ -25,9 +26,14 @@
 
     btn.addEventListener('click', async () => {
         const email = document.getElementById('emailInput').value;
+        const name = document.getElementById('nameInput').value;
         
         if (!email) {
             status.innerText = "Please enter an email.";
+            return;
+        }
+        if (!name) {
+            status.innerText = "Please enter an username.";
             return;
         }
 
@@ -41,14 +47,14 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email: email }),
+                body: JSON.stringify({ email: email, name: name }),
             });
 
             const data = await response.json();
-
+            console.log(data.message)
             if (response.ok) {
                 status.style.color = "green";
-                status.innerText = "Success! Check your inbox.";
+                status.innerText = data.message;
             } else {
                 status.style.color = "red";
                 status.innerText = "Error: " + (data.detail || "Something went wrong");

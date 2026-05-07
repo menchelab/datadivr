@@ -234,30 +234,47 @@ conf = ConnectionConfig(
 
 class EmailSchema(BaseModel):
     email: EmailStr
+    
 
 @app.post("/send-password")
-async def send_password_email(user: EmailSchema, background_tasks: FABackgroundTask):
+async def send_password_email(request: Request, user: EmailSchema, background_tasks: FABackgroundTask):
     # In a real app, generate a temporary password or reset token here
-    temporary_password = "SecurePassword123!" 
+    password = "SecurePassword123!"
+    fm = FastMail(conf)
+    print(user.email)
+    thisuser = await request.json()
+    name = thisuser.get("name")
+
+    users = load_userdb()
+    message1 = "User doesnt exist"
+    for u in users["users"]:
+        if u["name"] == name:
+            if "email" in u:
+                if u["email"] == user.email:
+                    password = u["pw"]
+                    message1 = "Email has been sent"
+                else: 
+                    message1 ="wrong  Email"
     
     html = f"""
-    <p>Hi there,</p>
-    <p>Your temporary password is: <strong>{temporary_password}</strong></p>
-    <p>Please change it immediately after logging in.</p>
+    <p>Hi {name},</p>
+    <p>Your password is: <strong>{password}</strong></p>
     """
 
     message = MessageSchema(
         subject="Your New Password",
-        recipients=["sepppirch@gmail.com"],
+        recipients=[user.email],
         body=html,
         subtype=MessageType.html
     )
 
-    fm = FastMail(conf)
-    background_tasks.add_task(fm.send_message, message)
-    #await fm.send_message(message)
-    
-    return {"message": "Email has been sent"}
+
+
+
+    if message1 == "Email has been sent":
+        background_tasks.add_task(fm.send_message, message)
+
+    return {"message": message1}
 
 
 @app.get("/forgot")
@@ -853,41 +870,49 @@ async def set_tasklist_handler(message: WebSocketMessage) -> None:
 @websocket_handler("get_task", HandlerType.SERVER)
 async def set_task_handler(message: WebSocketMessage) -> None:
     try:
-        index = message.payload.get("index", "")
-        #track_dir = os.path.join(os.path.dirname(__file__),  'tracks')
-        trackfiles = os.listdir(tracks_path)
-        #print(trackfiles)
-        tname = taskdata["tasks"][index]["name"]
-        matchingtracks = []
-        for tr in trackfiles:
-            name = tr.split("_")
-            if name[0] == tname:
-                with open(tracks_path +'/' + tr, 'r', encoding='utf-8') as f:
-        #global userdb 
-                    thistr = json.load(f)
-                    matchingtracks.append(thistr)
-                f.close()
+        reload_tasks()
+        thistask = {}
+        found = False
+        for t in taskdata["tasks"]:
+            if message.payload.get("name", "") == t["name"] +".json":
+                thistask = t
+                found = True
+                break
+        if found:
+            trackfiles = os.listdir(tracks_path)
 
-        for t in matchingtracks:
-            thisu = getUser(t["name"])
-            tex = ""
-            flag = "https://flagcdn.com/de.svg"
-            if thisu == None:
-                tex = "1.png"
-            else:
-                tex = thisu["tex"]
-                flag = thisu["flag"]
-            t["tex"] = tex
-            t["flag"] = flag
+            tname = thistask["name"]
+            matchingtracks = []
+            for tr in trackfiles:
+                name = tr.split("_")
+                if name[0] == tname:
+                    with open(tracks_path +'/' + tr, 'r', encoding='utf-8') as f: 
+                        thistr = json.load(f)
+                        matchingtracks.append(thistr)
+                    f.close()
+                    break
+
+            for t in matchingtracks:
+                thisu = getUser(t["name"])
+                tex = ""
+                flag = "https://flagcdn.com/de.svg"
+                if thisu == None:
+                    tex = "1.png"
+                else:
+                    tex = thisu["tex"]
+                    flag = thisu["flag"]
+                t["tex"] = tex
+                t["flag"] = flag
 
 
-        
-        sortedtracks = sorted(matchingtracks, key=lambda k: k.get('rtime', 0), reverse=False)
+            
+            sortedtracks = sorted(matchingtracks, key=lambda k: k.get('rtime', 0), reverse=False)
 
-        taskdata["tasks"][index]["tracks"] = sortedtracks
+            thistask["tracks"] = sortedtracks
 
-        return WebSocketMessage(event_name="TASK", payload=taskdata["tasks"][index], to=message.from_id)
-    
+            return WebSocketMessage(event_name="TASK", payload=thistask, to=message.from_id)
+        else:
+            print("couldent find task")
     except Exception as e:
         logger.exception("Error handling GAMESERVER_CLIENT_SETNAME", error=str(e))
 
