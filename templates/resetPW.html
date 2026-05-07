@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reset Password</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .container { max-width: 300px; display: flex; flex-direction: column; gap: 10px; }
+        button { cursor: pointer; background-color: #007bff; color: white; border: none; padding: 10px; border-radius: 4px; }
+        button:disabled { background-color: #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h3>Send Password Reset</h3>
+    <input type="email" id="emailInput" placeholder="Enter your email" required>
+    <button id="sendBtn">Send Email</button>
+    <p id="status"></p>
+</div>
+
+<script>
+    const btn = document.getElementById('sendBtn');
+    const status = document.getElementById('status');
+
+    btn.addEventListener('click', async () => {
+        const email = document.getElementById('emailInput').value;
+        
+        if (!email) {
+            status.innerText = "Please enter an email.";
+            return;
+        }
+
+        // Disable button and show loading state
+        btn.disabled = true;
+        status.innerText = "Sending...";
+
+        try {
+            const response = await fetch('http://127.0.0.1:8765/send-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: email }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                status.style.color = "green";
+                status.innerText = "Success! Check your inbox.";
+            } else {
+                status.style.color = "red";
+                status.innerText = "Error: " + (data.detail || "Something went wrong");
+            }
+        } catch (error) {
+            status.style.color = "red";
+            status.innerText = "Could not connect to server.";
+        } finally {
+            btn.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>

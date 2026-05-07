@@ -17,6 +17,9 @@ import shutil
 from fastapi import File, Form, UploadFile, Request, FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from os import listdir
+from fastapi import BackgroundTasks as FABackgroundTask
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+from pydantic import EmailStr, BaseModel
 
 # Initialize logging first, before getting the logger
 setup_logging()
@@ -25,6 +28,10 @@ logger = get_logger(__name__)
 
 
 import os
+
+
+from dotenv import load_dotenv
+load_dotenv()
 
 global taskdata
 taskdata = {"tasks":[]}
@@ -201,6 +208,71 @@ def is_within_range(lat1: float, lon1: float, lat2: float, lon2: float, max_rang
     c = 2 * asin(sqrt(a))
     distance = R * c
     return distance <= max_range_km
+
+# This shows where the terminal is currently "standing"
+print(f"Current Working Directory: {os.getcwd()}")
+
+# This shows where your script file actually lives
+print(f"Script Location: {os.path.abspath(__file__)}")
+
+# This checks if the .env file exists in the CWD
+print(f"Does .env exist here? {os.path.exists('.env')}")
+
+print(os.getenv("MAIL_PASSWORD"))
+
+conf = ConnectionConfig(
+    MAIL_USERNAME = "sepppCloudbase@gmail.com",
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD"),
+    MAIL_FROM = "noreply@cloudbase.com",
+    MAIL_PORT = 587,
+    MAIL_SERVER = "smtp.gmail.com",
+    MAIL_STARTTLS = True,
+    MAIL_SSL_TLS = False,
+    USE_CREDENTIALS = True,
+    VALIDATE_CERTS = True
+)
+
+class EmailSchema(BaseModel):
+    email: EmailStr
+
+@app.post("/send-password")
+async def send_password_email(user: EmailSchema, background_tasks: FABackgroundTask):
+    # In a real app, generate a temporary password or reset token here
+    temporary_password = "SecurePassword123!" 
+    
+    html = f"""
+    <p>Hi there,</p>
+    <p>Your temporary password is: <strong>{temporary_password}</strong></p>
+    <p>Please change it immediately after logging in.</p>
+    """
+
+    message = MessageSchema(
+        subject="Your New Password",
+        recipients=["sepppirch@gmail.com"],
+        body=html,
+        subtype=MessageType.html
+    )
+
+    fm = FastMail(conf)
+    background_tasks.add_task(fm.send_message, message)
+    #await fm.send_message(message)
+    
+    return {"message": "Email has been sent"}
+
+
+@app.get("/forgot")
+async def newaccount(request: Request):
+    return templates.TemplateResponse("resetPW.html", {"request": request})
+
+
+
+
+
+
+
+
+
+
 
 
 @app.get("/admin/download_users")
