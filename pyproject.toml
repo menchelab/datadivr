@@ -30,6 +30,7 @@ dependencies = [
     "plotly>=5.24.1",
     "pillow>=11.0.0",
     "python-multipart>=0.0.20",
+    "fastapi-mail>=1.6.2",
 ]
 
 [project.urls]
