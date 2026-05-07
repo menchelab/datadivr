@@ -43,6 +43,7 @@
                 if (data.message === "CORRECT") {
                      console.log(data.data)
                      //ue4("login", data.data)
+                     //console.log("{{json_data.serverURL}}")
                      window.location.href ="{{json_data.serverURL}}/cloudbase1337/"+data.data.name+"/"+data.data.pw;
                        
                 }

@@ -16,7 +16,7 @@
         if (file) {
             var formData = new FormData();
             formData.append('file', file);
-            formData.append("myjson", JSON.stringify({ "name": document.getElementById("usr").value, "flag": document.getElementById("flag-select").value }));
+            formData.append("myjson", JSON.stringify({ "name": document.getElementById("usr").value, "email": document.getElementById("email").value, "flag": document.getElementById("flag-select").value }));
             fetch('/upload', {
                 method: 'POST',
                 body: formData,
@@ -67,12 +67,14 @@
 
 
     function login() {
+        console.log("{{json_data.serverURL}}/cloudbase1337/0/0");
         window.location.href ="{{json_data.serverURL}}/cloudbase1337/0/0";
     
     }
 
 </script>
 <input type="text" id="usr" value="Enter Username">
+<input type="text" id="email" value="Enter Email">
 
 <label for="flag-select">Select your national flag:</label>
 <select id="flag-select" name="flag">

@@ -573,12 +573,13 @@ async def test(request: Request):
 async def multiplayermap(request: Request, name: str, pw: str):
     
     thisuser = searchUser(name,pw)
-    print(thisuser)  
+    print(thisuser) 
+    taskfiles = os.listdir(tasks_path)
     if thisuser is None:
         return templates.TemplateResponse("login.html", {"request": request, "json_data":  {"tasks":taskfiles, "serverURL":serverURL}})
     else:
         #return templates.TemplateResponse(request=request, name="client.html", context={"name": thisuser["name"], "tex": thisuser["tex"], "json_data": taskdata})
-        taskfiles = os.listdir(tasks_path)
+        
         return templates.TemplateResponse("client.html", {"request": request, "json_data": {"tasks":taskfiles, "user":thisuser, "livetask":5, "serverURL":serverURL, "serverWS":serverWS}})
     #return templates.TemplateResponse(request=request)
 
